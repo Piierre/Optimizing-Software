@@ -18,12 +18,60 @@ public sealed partial class CleanupViewModel : ObservableObject
     private readonly Quarantine _quarantine;
     private readonly Func<string, bool> _confirm;
 
+    private readonly IRecycleBin _recycleBin;
+    private readonly Func<bool> _restartAsAdmin;
+
     /// <param name="confirm">Affiche une question oui/non à l'utilisateur.</param>
-    public CleanupViewModel(IReadOnlyList<CleanupRule> rules, Quarantine quarantine, Func<string, bool> confirm)
+    /// <param name="restartAsAdmin">Relance l'appli en administrateur ; faux si l'utilisateur refuse.</param>
+    public CleanupViewModel(IReadOnlyList<CleanupRule> rules, Quarantine quarantine, Func<string, bool> confirm,
+        IRecycleBin recycleBin, bool isAdministrator, Func<bool> restartAsAdmin)
     {
         _rules = rules;
         _quarantine = quarantine;
         _confirm = confirm;
+        _recycleBin = recycleBin;
+        _restartAsAdmin = restartAsAdmin;
+        IsAdministrator = isAdministrator;
+    }
+
+    public bool IsAdministrator { get; }
+    public bool IsNotAdministrator => !IsAdministrator;
+
+    [ObservableProperty]
+    private string _recycleBinText = "";
+
+    [ObservableProperty]
+    private bool _recycleBinHasItems;
+
+    [RelayCommand]
+    private void RestartAsAdmin()
+    {
+        if (_restartAsAdmin())
+            System.Windows.Application.Current.Shutdown();
+        else
+            Status = "Relance annulée.";
+    }
+
+    [RelayCommand]
+    private async Task EmptyRecycleBinAsync()
+    {
+        var (bytes, items) = _recycleBin.Query();
+        if (items == 0) return;
+        if (!_confirm($"Vider la corbeille de Windows ({items.ToString("N0", Fr)} éléments, {Sizes.Format(bytes)}) ?\n\n" +
+                      "Attention : contrairement au reste du nettoyage, ces fichiers ne pourront pas être restaurés."))
+            return;
+        await Task.Run(_recycleBin.Empty);
+        RefreshRecycleBin();
+        Status = $"Corbeille de Windows vidée : {Sizes.Format(bytes)} libérés.";
+    }
+
+    private void RefreshRecycleBin()
+    {
+        var (bytes, items) = _recycleBin.Query();
+        RecycleBinHasItems = items > 0;
+        RecycleBinText = items == 0
+            ? "La corbeille de Windows est vide."
+            : $"La corbeille de Windows contient {items.ToString("N0", Fr)} éléments ({Sizes.Format(bytes)}).";
     }
 
     public ObservableCollection<CategoryItem> Categories { get; } = [];
@@ -48,6 +96,7 @@ public sealed partial class CleanupViewModel : ObservableObject
         {
             var freed = await Task.Run(() => _quarantine.PurgeExpired(DateTimeOffset.Now));
             RefreshSessions();
+            RefreshRecycleBin();
             await ScanAsync();
             if (freed > 0)
                 Status = $"{Sizes.Format(freed)} de nettoyages de plus de 7 jours ont été supprimés définitivement. " + Status;
@@ -142,7 +191,8 @@ public sealed partial class CleanupViewModel : ObservableObject
         Status = $"{total} libérés définitivement.";
     }
 
-    private void RefreshSessions()
+    /// <summary>Appelé quand un autre onglet a déplacé des fichiers dans la corbeille interne.</summary>
+    public void RefreshSessions()
     {
         var sessions = _quarantine.List();
         Sessions.Clear();

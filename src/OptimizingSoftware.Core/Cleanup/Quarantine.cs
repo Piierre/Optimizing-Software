@@ -13,7 +13,11 @@ public sealed record QuarantineSession(
 }
 
 /// <param name="StoredName">Nom du fichier dans la corbeille interne.</param>
-public sealed record QuarantineEntry(string OriginalPath, string StoredName, long SizeBytes);
+/// <param name="StoredPath">
+/// Emplacement complet dans la corbeille. Absent dans les nettoyages faits avant la version 0.4 :
+/// le fichier est alors dans le dossier « files » de la session.
+/// </param>
+public sealed record QuarantineEntry(string OriginalPath, string StoredName, long SizeBytes, string? StoredPath = null);
 
 public sealed record CleanOutcome(int MovedFiles, long MovedBytes, int SkippedFiles, string? SessionId);
 
@@ -24,8 +28,31 @@ public sealed record RestoreOutcome(int RestoredFiles, int SkippedFiles);
 /// emplacements d'origine, et peuvent être remis en place. Ils ne sont supprimés définitivement
 /// qu'après <see cref="RetentionPeriod"/> ou quand l'utilisateur vide la corbeille.
 /// </summary>
-public sealed class Quarantine(string root)
+/// <remarks>
+/// Un fichier situé sur un autre disque que <see cref="Root"/> est rangé dans un dossier
+/// « OptimizingSoftware.Corbeille » à la racine de son propre disque : le déplacement est instantané
+/// et ne remplit pas le disque de Windows.
+/// </remarks>
+/// <param name="volumeStoreRoot">
+/// Pour un fichier, le dossier de corbeille de son disque, ou null pour utiliser <see cref="Root"/>.
+/// Par défaut : <see cref="DefaultVolumeStoreRoot"/>. Remplaçable pour les tests.
+/// </param>
+public sealed class Quarantine(string root, Func<string, string?>? volumeStoreRoot = null)
 {
+    public const string VolumeFolderName = "OptimizingSoftware.Corbeille";
+
+    private readonly Func<string, string?> _volumeStoreRoot = volumeStoreRoot ?? (p => DefaultVolumeStoreRoot(root, p));
+
+    /// <summary>Null si le fichier est sur le même disque que la corbeille principale.</summary>
+    public static string? DefaultVolumeStoreRoot(string mainRoot, string path)
+    {
+        var fileVolume = Path.GetPathRoot(Path.GetFullPath(path));
+        var mainVolume = Path.GetPathRoot(Path.GetFullPath(mainRoot));
+        return string.IsNullOrEmpty(fileVolume) || string.Equals(fileVolume, mainVolume, StringComparison.OrdinalIgnoreCase)
+            ? null
+            : Path.Combine(fileVolume, VolumeFolderName);
+    }
+
     public static readonly TimeSpan RetentionPeriod = TimeSpan.FromDays(7);
     private const string ManifestName = "manifest.json";
     private const string FilesDir = "files";
@@ -47,6 +74,7 @@ public sealed class Quarantine(string root)
         Directory.CreateDirectory(filesDir);
 
         var entries = new List<QuarantineEntry>();
+        var volumeDirs = new HashSet<string>();
         var skipped = 0;
         var index = 0;
         foreach (var path in paths)
@@ -61,8 +89,14 @@ public sealed class Quarantine(string root)
                 }
                 var size = new FileInfo(path).Length;
                 var stored = $"{index++:D7}{Path.GetExtension(path)}";
-                File.Move(path, Path.Combine(filesDir, stored));
-                entries.Add(new QuarantineEntry(path, stored, size));
+                var targetDir = _volumeStoreRoot(path) is { } volumeRoot
+                    ? Path.Combine(volumeRoot, id)
+                    : filesDir;
+                Directory.CreateDirectory(targetDir);
+                if (targetDir != filesDir) volumeDirs.Add(targetDir);
+                var storedPath = Path.Combine(targetDir, stored);
+                File.Move(path, storedPath);
+                entries.Add(new QuarantineEntry(path, stored, size, storedPath));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -74,6 +108,8 @@ public sealed class Quarantine(string root)
         if (entries.Count == 0)
         {
             Directory.Delete(sessionDir, recursive: true);
+            foreach (var dir in volumeDirs.Where(Directory.Exists))
+                Directory.Delete(dir, recursive: true);
             return new CleanOutcome(0, 0, skipped, null);
         }
 
@@ -107,12 +143,11 @@ public sealed class Quarantine(string root)
     {
         var session = List().FirstOrDefault(s => s.Id == sessionId)
                       ?? throw new InvalidOperationException($"Nettoyage {sessionId} introuvable.");
-        var filesDir = Path.Combine(Root, sessionId, FilesDir);
         var restored = 0;
         var remaining = new List<QuarantineEntry>();
         foreach (var e in session.Entries)
         {
-            var stored = Path.Combine(filesDir, e.StoredName);
+            var stored = StoredPathOf(sessionId, e);
             try
             {
                 if (File.Exists(e.OriginalPath) || !File.Exists(stored))
@@ -131,7 +166,10 @@ public sealed class Quarantine(string root)
         }
 
         if (remaining.Count == 0)
+        {
             Directory.Delete(Path.Combine(Root, sessionId), recursive: true);
+            DeleteVolumeDirs(sessionId, session.Entries);
+        }
         else
             Save(session with { Entries = remaining });
         return new RestoreOutcome(restored, remaining.Count);
@@ -144,7 +182,34 @@ public sealed class Quarantine(string root)
         // Garde-fou : on ne supprime qu'un dossier de session de la corbeille interne.
         if (!PathSafety.IsInside(dir, [Root]) || !File.Exists(Path.Combine(dir, ManifestName)))
             throw new InvalidOperationException($"Nettoyage {sessionId} introuvable.");
+        var session = List().FirstOrDefault(s => s.Id == sessionId);
         Directory.Delete(dir, recursive: true);
+        if (session is not null)
+            DeleteVolumeDirs(sessionId, session.Entries);
+    }
+
+    private string StoredPathOf(string sessionId, QuarantineEntry e) =>
+        e.StoredPath ?? Path.Combine(Root, sessionId, FilesDir, e.StoredName);
+
+    /// <summary>Supprime les dossiers de cette session rangés sur les autres disques.</summary>
+    private void DeleteVolumeDirs(string sessionId, IEnumerable<QuarantineEntry> entries)
+    {
+        var dirs = entries
+            .Select(e => StoredPathOf(sessionId, e))
+            .Select(Path.GetDirectoryName)
+            .Where(d => d is not null && Path.GetFileName(d) == sessionId && !PathSafety.IsInside(d, [Root]))
+            .Distinct();
+        foreach (var dir in dirs)
+        {
+            try
+            {
+                if (Directory.Exists(dir)) Directory.Delete(dir!, recursive: true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Sera retenté à la prochaine purge si besoin.
+            }
+        }
     }
 
     /// <summary>Supprime définitivement les nettoyages de plus de 7 jours. Renvoie l'espace libéré.</summary>
