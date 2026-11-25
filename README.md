@@ -4,12 +4,33 @@ Application Windows qui trouve ce qui ralentit un PC et aide à le nettoyer, san
 
 ## Où en est le projet
 
+Objectif (recentré le 25 novembre 2026) : garder le PC propre dans la durée en retirant ce qui s'accumule, pour tous les jeux et applications.
+
 | Étape | Contenu | État |
 | --- | --- | --- |
 | 1 | Cadrage | Fait |
-| 2 | Socle + Diagnostic performances | En cours |
-| 3 | Analyse des processus et programmes au démarrage | À venir |
-| 4 | Analyse des fichiers et applications, installeur | À venir |
+| 2 | Diagnostic performances et enregistrement en jeu | Fait |
+| 3 | Corbeille interne + fichiers temporaires et caches | En cours |
+| 4 | Vieux téléchargements, gros fichiers, doublons | À venir |
+| 5 | Applications installées et restes de désinstallation | À venir |
+| 6 | Programmes au démarrage et processus | À venir |
+| 7 | Finitions et installeur | À venir |
+
+## Nettoyage
+
+L'onglet « Nettoyage » analyse au lancement ce qui peut être retiré, sans droits administrateur :
+
+| Catégorie | Cochée par défaut |
+| --- | --- |
+| Fichiers temporaires (plus d'un jour) | Oui |
+| Rapports de plantage et vidages mémoire | Oui |
+| Caches de Chrome, Edge, Brave, Opera GX, Firefox | Oui |
+| Cache de Discord, cache web de Steam | Oui |
+| Caches de shaders de la carte graphique | Non : les jeux saccadent le temps de les reconstruire |
+
+Rien n'est supprimé directement. Après confirmation, les fichiers sont déplacés dans une corbeille interne (`%LOCALAPPDATA%\OptimizingSoftware\Corbeille`) avec leur emplacement d'origine. Chaque nettoyage peut être restauré pendant 7 jours, puis il est supprimé définitivement. On peut aussi vider la corbeille pour libérer la place tout de suite.
+
+Garde-fous : l'application ne touche qu'aux dossiers listés ci-dessus, ignore les liens symboliques et jonctions, ignore les fichiers en cours d'utilisation, et ne remplace jamais un fichier existant lors d'une restauration.
 
 ## Diagnostic performances
 

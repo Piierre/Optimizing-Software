@@ -18,7 +18,98 @@
     </Window.Resources>
 
     <TabControl Margin="16,8,16,16">
-        <!-- ============ Onglet 1 : vérifications ============ -->
+        <!-- ============ Onglet : nettoyage ============ -->
+        <TabItem Header="Nettoyage" x:Name="CleanupTab">
+            <DockPanel Margin="8,16,8,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Nettoyage" FontSize="26" FontWeight="SemiBold" />
+                        <TextBlock Text="Retire ce qui s'accumule avec le temps. Tout passe par une corbeille : tu peux restaurer pendant 7 jours."
+                                   TextWrapping="Wrap" Opacity="0.7" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="100" Margin="0,0,12,0"
+                                     Visibility="{Binding CleanCommand.IsRunning, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{Binding SelectedTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="Analyser" Command="{Binding ScanCommand}" Padding="16,8" Margin="0,0,8,0" />
+                        <Button Content="Nettoyer la sélection" Command="{Binding CleanCommand}" Padding="16,8"
+                                Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="380" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="320" />
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CategoryItem}">
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                                        <DockPanel>
+                                            <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsSelected}" VerticalAlignment="Top" Margin="0,2,8,0" />
+                                            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right" Margin="12,0,0,0">
+                                                <TextBlock Text="{Binding Size}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                                <TextBlock Text="{Binding Detail}" FontSize="12" Opacity="0.65" HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,4,0,0" Opacity="0.85" />
+                                                <TextBlock Text="{Binding Note}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                           Foreground="{StaticResource WarningBrush}"
+                                                           Visibility="{Binding HasNote, Converter={StaticResource BoolToVisibility}}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Corbeille interne -->
+                    <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Content="Vider" Command="{Binding EmptyCommand}" Padding="10,4"
+                                        Visibility="{Binding HasSessions, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="Corbeille" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding QuarantineTotal}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Sessions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:SessionItem}">
+                                        <StackPanel Margin="0,0,0,12">
+                                            <TextBlock Text="{Binding Label}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Summary}" FontSize="12" TextWrapping="Wrap" Opacity="0.75" />
+                                            <TextBlock Text="{Binding Expires}" FontSize="12" Opacity="0.6" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                <Button Content="Restaurer" Padding="10,4" Margin="0,0,8,0"
+                                                        Command="{Binding DataContext.RestoreCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Content="Supprimer" Padding="10,4"
+                                                        Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ============ Onglet : vérifications ============ -->
         <TabItem Header="Vérifications" x:Name="DiagnosticTab">
             <DockPanel Margin="8,16,8,0">
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
@@ -93,7 +184,7 @@
             </DockPanel>
         </TabItem>
 
-        <!-- ============ Onglet 2 : enregistrement en jeu ============ -->
+        <!-- ============ Onglet : enregistrement en jeu (secondaire) ============ -->
         <TabItem Header="Enregistrement en jeu" x:Name="RecordingTab">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="8,16,8,0">
