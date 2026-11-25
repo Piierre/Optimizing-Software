@@ -43,11 +43,38 @@ public class CheckTests
     }
 
     [Fact]
-    public void Three_recent_gpu_crashes_are_a_problem()
+    public void Three_separate_gpu_crashes_are_a_problem()
     {
-        var crash = new GpuCrashEvent(Snapshots.Now.AddDays(-2), "4101");
-        var s = Pierre with { GpuCrashes = [crash, crash, crash] };
+        var s = Pierre with
+        {
+            GpuCrashes =
+            [
+                new GpuCrashEvent(Snapshots.Now.AddDays(-2), "LiveKernelEvent 141"),
+                new GpuCrashEvent(Snapshots.Now.AddDays(-5), "LiveKernelEvent 141"),
+                new GpuCrashEvent(Snapshots.Now.AddDays(-9), "pilote d'affichage relancé (4101)"),
+            ],
+        };
         Assert.Equal(CheckStatus.Problem, new GpuCrashCheck().Evaluate(s).Status);
+    }
+
+    [Fact]
+    public void Same_crash_logged_several_times_counts_once()
+    {
+        // Ce que Windows a enregistré chez Pierre : un plantage, trois événements à quelques minutes d'écart.
+        var t = new DateTimeOffset(2026, 11, 15, 21, 12, 0, TimeSpan.FromHours(1));
+        var s = Pierre with
+        {
+            GpuCrashes =
+            [
+                new GpuCrashEvent(t, "pilote d'affichage relancé (4101)"),
+                new GpuCrashEvent(t.AddSeconds(20), "LiveKernelEvent 141"),
+                new GpuCrashEvent(t.AddMinutes(4), "LiveKernelEvent 141"),
+            ],
+        };
+        var r = new GpuCrashCheck().Evaluate(s);
+        Assert.Equal(CheckStatus.Warning, r.Status);
+        Assert.StartsWith("1 plantage", r.Summary);
+        Assert.Contains("LiveKernelEvent 141", r.Summary);
     }
 
     [Fact]
