@@ -19,6 +19,9 @@ public sealed partial class MainViewModel(ISystemSnapshotProvider provider, Diag
 
     public bool HasResults => Summary is not null;
 
+    /// <summary>Dernière photo du PC, utilisée pour adapter les conseils d'upgrade de l'enregistrement.</summary>
+    public SystemSnapshot? LastSnapshot { get; private set; }
+
     [RelayCommand]
     private async Task RunDiagnosticAsync(CancellationToken cancellationToken)
     {
@@ -27,6 +30,7 @@ public sealed partial class MainViewModel(ISystemSnapshotProvider provider, Diag
         {
             var snapshot = await provider.CaptureAsync(cancellationToken);
             var results = engine.Run(snapshot);
+            LastSnapshot = snapshot;
 
             Inventory.Clear();
             foreach (var line in InventoryLine.From(snapshot))

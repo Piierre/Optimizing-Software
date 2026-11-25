@@ -8,84 +8,204 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <local:BrushKeyConverter x:Key="BrushKey" />
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Padding" Value="16" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+        </Style>
     </Window.Resources>
 
-    <DockPanel Margin="24">
-        <!-- En-tête -->
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <StackPanel>
-                <TextBlock Text="Diagnostic performances" FontSize="26" FontWeight="SemiBold" />
-                <TextBlock Text="Trouve ce qui ralentit le PC, sans rien modifier." Opacity="0.7" Margin="0,4,0,0" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <ProgressBar IsIndeterminate="True" Width="120" Margin="0,0,12,0"
-                             Visibility="{Binding RunDiagnosticCommand.IsRunning, Converter={StaticResource BoolToVisibility}}" />
-                <Button Content="Lancer le diagnostic" Command="{Binding RunDiagnosticCommand}"
-                        Padding="16,8" Style="{DynamicResource AccentButtonStyle}" />
-            </StackPanel>
-        </Grid>
+    <TabControl Margin="16,8,16,16">
+        <!-- ============ Onglet 1 : vérifications ============ -->
+        <TabItem Header="Vérifications" x:Name="DiagnosticTab">
+            <DockPanel Margin="8,16,8,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Diagnostic performances" FontSize="26" FontWeight="SemiBold" />
+                        <TextBlock Text="Trouve ce qui ralentit le PC, sans rien modifier." Opacity="0.7" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Width="120" Margin="0,0,12,0"
+                                     Visibility="{Binding RunDiagnosticCommand.IsRunning, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Content="Relancer le diagnostic" Command="{Binding RunDiagnosticCommand}"
+                                Padding="16,8" Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
+                </Grid>
 
-        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource ProblemBrush}" TextWrapping="Wrap"
-                   Margin="0,0,0,12" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource ProblemBrush}" TextWrapping="Wrap"
+                           Margin="0,0,0,12" />
 
-        <TextBlock DockPanel.Dock="Top" Text="{Binding Summary}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"
-                   Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Summary}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"
+                           Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}" />
 
-        <Grid Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MinWidth="380" />
-                <ColumnDefinition Width="24" />
-                <ColumnDefinition Width="320" />
-            </Grid.ColumnDefinitions>
+                <Grid Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="380" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="320" />
+                    </Grid.ColumnDefinitions>
 
-            <!-- Vérifications -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Checks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CheckItemViewModel}">
+                                    <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Border DockPanel.Dock="Right" CornerRadius="10" Padding="10,2"
+                                                        Background="{Binding BrushKey, Converter={StaticResource BrushKey}}">
+                                                    <TextBlock Text="{Binding StatusLabel}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                            <TextBlock Text="{Binding Advice}" TextWrapping="Wrap" Margin="0,6,0,0" Opacity="0.75"
+                                                       Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Ton PC" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Inventory}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:InventoryLine}">
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.65" />
+                                            <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ============ Onglet 2 : enregistrement en jeu ============ -->
+        <TabItem Header="Enregistrement en jeu" x:Name="RecordingTab">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Checks}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate DataType="{x:Type vm:CheckItemViewModel}">
-                            <Border Margin="0,0,0,10" Padding="16" CornerRadius="8" BorderThickness="1"
-                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
-                                <StackPanel>
-                                    <DockPanel>
-                                        <Border DockPanel.Dock="Right" CornerRadius="10" Padding="10,2"
-                                                Background="{Binding BrushKey, Converter={StaticResource BrushKey}}">
-                                            <TextBlock Text="{Binding StatusLabel}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
-                                        </Border>
-                                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
-                                    </DockPanel>
-                                    <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,6,0,0" />
-                                    <TextBlock Text="{Binding Advice}" TextWrapping="Wrap" Margin="0,6,0,0" Opacity="0.75"
-                                               Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVisibility}}" />
-                                </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                <StackPanel Margin="8,16,8,0">
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Qu'est-ce qui limite en jeu ?" FontSize="26" FontWeight="SemiBold" />
+                            <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,4,0,0" MaxWidth="640" HorizontalAlignment="Left"
+                                       Text="1. Clique sur Démarrer.  2. Lance ton jeu et joue 2 à 10 minutes à un passage qui rame.  3. Reviens ici et clique sur Arrêter et analyser." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Elapsed}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,16,0"
+                                       Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibility}}" />
+                            <Button Content="Démarrer" Command="{Binding StartCommand}" Padding="16,8" Margin="0,0,8,0"
+                                    Style="{DynamicResource AccentButtonStyle}" />
+                            <Button Content="Arrêter et analyser" Command="{Binding StopCommand}" Padding="16,8" />
+                        </StackPanel>
+                    </Grid>
 
-            <!-- Inventaire -->
-            <Border Grid.Column="2" Padding="16" CornerRadius="8" BorderThickness="1" VerticalAlignment="Top"
-                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
-                <StackPanel>
-                    <TextBlock Text="Ton PC" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
-                    <ItemsControl ItemsSource="{Binding Inventory}">
+                    <!-- Mesures en direct -->
+                    <ItemsControl ItemsSource="{Binding Live}" Visibility="{Binding IsRecording, Converter={StaticResource BoolToVisibility}}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:InventoryLine}">
-                                <StackPanel Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.65" />
-                                    <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
-                                </StackPanel>
+                            <DataTemplate DataType="{x:Type vm:LiveGauge}">
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="220" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    <ProgressBar Grid.Column="1" Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="8" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Text}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- Résultat -->
+                    <StackPanel Visibility="{Binding HasReport, Converter={StaticResource BoolToVisibility}}">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,12" BorderThickness="0,0,0,0">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Width="6" CornerRadius="3" Margin="0,0,14,0"
+                                        Background="{Binding BrushKey, Converter={StaticResource BrushKey}}" />
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Verdict}" FontSize="20" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Que faire" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6" />
+                                <ItemsControl ItemsSource="{Binding Upgrades}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StringFormat='•  {0}'}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <ItemsControl ItemsSource="{Binding Warnings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StringFormat='⚠  {0}'}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                                       Foreground="{StaticResource WarningBrush}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Mesures pendant la partie" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                <Grid Margin="0,0,0,4" Opacity="0.65">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="260" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="100" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Mesure" />
+                                    <TextBlock Grid.Column="1" Text="Moyenne" />
+                                    <TextBlock Grid.Column="2" Text="Pic (95 %)" />
+                                    <TextBlock Grid.Column="3" Text="Max" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding Stats}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:StatLine}">
+                                            <Grid Margin="0,2">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="260" />
+                                                    <ColumnDefinition Width="100" />
+                                                    <ColumnDefinition Width="100" />
+                                                    <ColumnDefinition Width="100" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Name}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Average}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding P95}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Max}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
-            </Border>
-        </Grid>
-    </DockPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
 </Window>

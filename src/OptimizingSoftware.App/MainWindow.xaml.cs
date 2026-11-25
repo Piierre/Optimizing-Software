@@ -10,9 +10,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        var viewModel = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
-        DataContext = viewModel;
+        var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
+        var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
+        DiagnosticTab.DataContext = diagnostic;
+        RecordingTab.DataContext = recording;
+        Closed += (_, _) => recording.Dispose();
         // Le diagnostic est en lecture seule : on peut le lancer dès l'ouverture.
-        Loaded += (_, _) => viewModel.RunDiagnosticCommand.Execute(null);
+        Loaded += (_, _) => diagnostic.RunDiagnosticCommand.Execute(null);
     }
 }
