@@ -70,9 +70,11 @@ Onglet « Enregistrement en jeu » : on démarre, on joue 2 à 10 minutes, on ar
 | Verdict | Règle (pendant au moins 30 % du temps en jeu) |
 | --- | --- |
 | Carte graphique | Utilisation ≥ 95 % |
-| Processeur | ≥ 90 % (ou un cœur ≥ 95 %) alors que la carte graphique est sous 85 % |
+| Processeur | ≥ 85 % (ou un cœur ≥ 90 %) alors que la carte graphique est sous 75 % ; ou, à défaut, carte graphique sous 60 % en moyenne avec un processeur chargé (60 % en moyenne) qui monte à 90 % et plus par pointes |
 | RAM | ≥ 90 % utilisée |
 | Disque | Occupé ≥ 95 % |
+
+Une RAM utilisée à plus de 80 % en moyenne est signalée en plus du verdict. La partie « Que faire » propose toujours quelque chose, même quand rien ne sature (plafond de FPS, autres vérifications).
 
 Les moments au bureau ou dans les menus (processeur et carte graphique sous 50 %) sont ignorés. L'analyse donne ensuite des conseils d'upgrade adaptés à la configuration et signale une carte graphique au-dessus de 83 °C.
 
