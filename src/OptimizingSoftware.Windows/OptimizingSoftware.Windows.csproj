@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Lecture des informations du PC via les API Windows (WMI, registre, journaux, affichage, alimentation). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.13" />
+    <PackageReference Include="System.Management" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizingSoftware.Core\OptimizingSoftware.Core.csproj" />
+  </ItemGroup>
+
+</Project>

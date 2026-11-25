@@ -1,0 +1,28 @@
+# Build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]rm64/
+publish/
+artifacts/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.rsuser
+*.userprefs
+
+# Tests
+TestResults/
+coverage*.xml
+*.trx
+
+# NuGet
+*.nupkg
+packages/

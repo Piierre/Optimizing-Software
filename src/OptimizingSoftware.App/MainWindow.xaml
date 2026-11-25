@@ -1,0 +1,91 @@
+<Window x:Class="OptimizingSoftware.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:OptimizingSoftware.App.ViewModels"
+        xmlns:local="clr-namespace:OptimizingSoftware.App"
+        Title="Optimizing Software" Height="760" Width="1040" MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <local:BrushKeyConverter x:Key="BrushKey" />
+    </Window.Resources>
+
+    <DockPanel Margin="24">
+        <!-- En-tête -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Diagnostic performances" FontSize="26" FontWeight="SemiBold" />
+                <TextBlock Text="Trouve ce qui ralentit le PC, sans rien modifier." Opacity="0.7" Margin="0,4,0,0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <ProgressBar IsIndeterminate="True" Width="120" Margin="0,0,12,0"
+                             Visibility="{Binding RunDiagnosticCommand.IsRunning, Converter={StaticResource BoolToVisibility}}" />
+                <Button Content="Lancer le diagnostic" Command="{Binding RunDiagnosticCommand}"
+                        Padding="16,8" Style="{DynamicResource AccentButtonStyle}" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Foreground="{StaticResource ProblemBrush}" TextWrapping="Wrap"
+                   Margin="0,0,0,12" />
+
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Summary}" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"
+                   Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}" />
+
+        <Grid Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="380" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="320" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Vérifications -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Checks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CheckItemViewModel}">
+                            <Border Margin="0,0,0,10" Padding="16" CornerRadius="8" BorderThickness="1"
+                                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Right" CornerRadius="10" Padding="10,2"
+                                                Background="{Binding BrushKey, Converter={StaticResource BrushKey}}">
+                                            <TextBlock Text="{Binding StatusLabel}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding Advice}" TextWrapping="Wrap" Margin="0,6,0,0" Opacity="0.75"
+                                               Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVisibility}}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Inventaire -->
+            <Border Grid.Column="2" Padding="16" CornerRadius="8" BorderThickness="1" VerticalAlignment="Top"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                <StackPanel>
+                    <TextBlock Text="Ton PC" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <ItemsControl ItemsSource="{Binding Inventory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:InventoryLine}">
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.65" />
+                                    <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>
