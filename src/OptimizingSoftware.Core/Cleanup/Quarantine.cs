@@ -19,6 +19,13 @@ public sealed record CleanOutcome(int MovedFiles, long MovedBytes, int SkippedFi
 
 public sealed record RestoreOutcome(int RestoredFiles, int SkippedFiles);
 
+/// <param name="LockedFiles">Fichiers qui n'ont pas pu être effacés (en cours d'utilisation) et restent dans la corbeille.</param>
+public sealed record DeleteOutcome(int DeletedFiles, long FreedBytes, int LockedFiles)
+{
+    public static DeleteOutcome operator +(DeleteOutcome a, DeleteOutcome b) =>
+        new(a.DeletedFiles + b.DeletedFiles, a.FreedBytes + b.FreedBytes, a.LockedFiles + b.LockedFiles);
+}
+
 /// <summary>
 /// Corbeille interne : les fichiers nettoyés y sont déplacés (pas supprimés) avec la liste de leurs
 /// emplacements d'origine, et peuvent être remis en place. Ils ne sont supprimés définitivement
@@ -137,26 +144,104 @@ public sealed class Quarantine(string root)
         return new RestoreOutcome(restored, remaining.Count);
     }
 
-    /// <summary>Supprime définitivement un nettoyage de la corbeille interne. Irréversible.</summary>
-    public void DeletePermanently(string sessionId)
+    /// <summary>
+    /// Supprime définitivement un nettoyage de la corbeille interne. Irréversible.
+    /// Un fichier qui ne peut pas être effacé (encore chargé par une application, par exemple une .dll
+    /// d'un programme ouvert) est laissé dans la corbeille et compté dans <see cref="DeleteOutcome.LockedFiles"/> :
+    /// il sera retenté à la prochaine suppression ou purge.
+    /// </summary>
+    public DeleteOutcome DeletePermanently(string sessionId)
     {
         var dir = Path.Combine(Root, sessionId);
         // Garde-fou : on ne supprime qu'un dossier de session de la corbeille interne.
         if (!PathSafety.IsInside(dir, [Root]) || !File.Exists(Path.Combine(dir, ManifestName)))
             throw new InvalidOperationException($"Nettoyage {sessionId} introuvable.");
-        Directory.Delete(dir, recursive: true);
+
+        var session = List().FirstOrDefault(s => s.Id == sessionId);
+        if (session is null)
+        {
+            // Manifeste illisible : on tente de vider le dossier sans planter.
+            TryDeleteTree(dir);
+            return new DeleteOutcome(0, 0, 0);
+        }
+
+        var remaining = new List<QuarantineEntry>();
+        long freed = 0;
+        foreach (var e in session.Entries)
+        {
+            var stored = Path.Combine(dir, FilesDir, e.StoredName);
+            if (TryDeleteFile(stored))
+                freed += e.SizeBytes;
+            else
+                remaining.Add(e);
+        }
+
+        if (remaining.Count == 0)
+            TryDeleteTree(dir);
+        else
+            Save(session with { Entries = remaining });
+
+        return new DeleteOutcome(session.Entries.Count - remaining.Count, freed, remaining.Count);
     }
 
-    /// <summary>Supprime définitivement les nettoyages de plus de 7 jours. Renvoie l'espace libéré.</summary>
-    public long PurgeExpired(DateTimeOffset now)
+    /// <summary>Supprime définitivement les nettoyages de plus de 7 jours. Ne lève jamais d'exception.</summary>
+    public DeleteOutcome PurgeExpired(DateTimeOffset now)
     {
-        long freed = 0;
+        var total = new DeleteOutcome(0, 0, 0);
         foreach (var s in List().Where(s => now - s.CreatedAt > RetentionPeriod))
         {
-            DeletePermanently(s.Id);
-            freed += s.TotalBytes;
+            try
+            {
+                total += DeletePermanently(s.Id);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                total += new DeleteOutcome(0, 0, s.Entries.Count);
+            }
         }
-        return freed;
+        return total;
+    }
+
+    /// <summary>Pour les tests : simule un fichier impossible à effacer (renvoyer vrai = verrouillé).</summary>
+    internal Func<string, bool>? IsLockedForTests { get; set; }
+
+    /// <summary>Retire l'attribut lecture seule puis efface. Faux si le fichier est verrouillé ou protégé.</summary>
+    private bool TryDeleteFile(string path)
+    {
+        if (IsLockedForTests?.Invoke(path) == true) return false;
+        try
+        {
+            if (!File.Exists(path)) return true;
+            var attributes = File.GetAttributes(path);
+            if ((attributes & (FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System)) != 0)
+                File.SetAttributes(path, FileAttributes.Normal);
+            File.Delete(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Efface un dossier de session : fichiers un par un, puis dossiers vides. Ignore ce qui résiste.</summary>
+    private void TryDeleteTree(string dir)
+    {
+        if (!Directory.Exists(dir)) return;
+        foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).ToList())
+            TryDeleteFile(file);
+        foreach (var sub in Directory.EnumerateDirectories(dir, "*", SearchOption.AllDirectories)
+                     .OrderByDescending(d => d.Length).Append(dir))
+        {
+            try
+            {
+                Directory.Delete(sub);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Pas vide (fichier verrouillé) : on le laisse.
+            }
+        }
     }
 
     private void Save(QuarantineSession session) =>

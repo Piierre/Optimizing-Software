@@ -46,11 +46,11 @@ public sealed partial class CleanupViewModel : ObservableObject
     {
         try
         {
-            var freed = await Task.Run(() => _quarantine.PurgeExpired(DateTimeOffset.Now));
+            var purged = await Task.Run(() => _quarantine.PurgeExpired(DateTimeOffset.Now));
             RefreshSessions();
             await ScanAsync();
-            if (freed > 0)
-                Status = $"{Sizes.Format(freed)} de nettoyages de plus de 7 jours ont été supprimés définitivement. " + Status;
+            if (purged.FreedBytes > 0)
+                Status = $"{Sizes.Format(purged.FreedBytes)} de nettoyages de plus de 7 jours ont été supprimés définitivement. " + Status;
         }
         catch (Exception ex)
         {
@@ -122,9 +122,8 @@ public sealed partial class CleanupViewModel : ObservableObject
     private async Task DeleteAsync(SessionItem session)
     {
         if (!_confirm($"Supprimer définitivement le nettoyage « {session.Label} » ({session.Size}) ?\n\nCette action ne peut pas être annulée.")) return;
-        await Task.Run(() => _quarantine.DeletePermanently(session.Id));
-        RefreshSessions();
-        Status = $"{session.Size} libérés définitivement.";
+        var outcome = await DeleteSafelyAsync([session.Id]);
+        Status = Describe(outcome);
     }
 
     [RelayCommand]
@@ -134,13 +133,38 @@ public sealed partial class CleanupViewModel : ObservableObject
         if (sessions.Count == 0) return;
         var total = Sizes.Format(sessions.Sum(s => s.TotalBytes));
         if (!_confirm($"Vider la corbeille d'Optimizing Software et libérer {total} tout de suite ?\n\nCette action ne peut pas être annulée.")) return;
-        await Task.Run(() =>
+        var outcome = await DeleteSafelyAsync(sessions.Select(s => s.Id).ToList());
+        Status = Describe(outcome);
+    }
+
+    /// <summary>Supprime sans jamais faire planter l'appli, puis rafraîchit la corbeille.</summary>
+    private async Task<DeleteOutcome> DeleteSafelyAsync(IReadOnlyList<string> sessionIds)
+    {
+        var outcome = await Task.Run(() =>
         {
-            foreach (var s in sessions) _quarantine.DeletePermanently(s.Id);
+            var total = new DeleteOutcome(0, 0, 0);
+            foreach (var id in sessionIds)
+            {
+                try
+                {
+                    total += _quarantine.DeletePermanently(id);
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or InvalidOperationException)
+                {
+                    total += new DeleteOutcome(0, 0, 1);
+                }
+            }
+            return total;
         });
         RefreshSessions();
-        Status = $"{total} libérés définitivement.";
+        return outcome;
     }
+
+    private static string Describe(DeleteOutcome o) =>
+        $"{Sizes.Format(o.FreedBytes)} libérés définitivement."
+        + (o.LockedFiles > 0
+            ? $" {o.LockedFiles.ToString("N0", Fr)} fichier(s) encore utilisés par une application ouverte sont restés dans la corbeille : ferme l'application concernée ou redémarre le PC, puis réessaie."
+            : "");
 
     private void RefreshSessions()
     {
