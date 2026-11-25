@@ -11,8 +11,8 @@ Objectif (recentré le 25 novembre 2026) : garder le PC propre dans la durée en
 | 1 | Cadrage | Fait |
 | 2 | Diagnostic performances et enregistrement en jeu | Fait |
 | 3 | Corbeille interne + fichiers temporaires et caches | Fait |
-| 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | En cours |
-| 5 | Applications installées et restes de désinstallation | À venir |
+| 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | Fait |
+| 5 | Applications installées et restes de désinstallation | En cours |
 | 6 | Programmes au démarrage et processus | À venir |
 | 7 | Finitions et installeur | À venir |
 
@@ -62,6 +62,24 @@ L'onglet « Fichiers » propose trois analyses, lancées à la demande :
 Les jeux installés (Steam, Epic, Xbox, Riot…), `Program Files`, `AppData` et `Windows` ne sont jamais parcourus. L'appli refuse de retirer tous les exemplaires d'un même doublon. Les fichiers d'un autre disque vont dans un dossier `OptimizingSoftware.Corbeille` à la racine de ce disque, pour ne pas remplir le disque de Windows.
 
 Avec les droits administrateur (bouton « Relancer en administrateur »), l'onglet Nettoyage ajoute `C:\Windows\Temp`, les téléchargements de Windows Update et les anciens journaux d'installation. La corbeille de Windows peut aussi être vidée, après une confirmation qui précise que c'est définitif.
+
+## Applications
+
+L'onglet « Applications » (bouton « Analyser ») a trois parties :
+
+| Partie | Ce qu'on y fait | Coché par défaut |
+| --- | --- | --- |
+| Installées | Liste de « Applications installées » de Windows, triée par taille, avec recherche. « Désinstaller » lance le désinstallateur de l'application, puis cherche ce qu'elle a laissé | — |
+| Dossiers restants | Sous-dossiers directs de Program Files, AppData (Local, LocalLow, Roaming) et ProgramData qui ne correspondent à aucune application installée et n'ont pas bougé depuis 2 mois | Dossiers vides, dossiers de programmes sans plus aucun .exe, dossiers de l'application qu'on vient de désinstaller |
+| Entrées cassées | Applications encore listées alors que leur désinstallateur et leur dossier ont disparu | Toutes |
+
+Les dossiers partagés ou sensibles ne sont jamais proposés (Microsoft, Windows, Common Files, pilotes, launchers de jeux et sauvegardes de jeux…). Les dossiers vont dans la corbeille interne comme les autres fichiers. Chaque entrée du registre est d'abord exportée dans un fichier `.reg` dans la corbeille ; si l'export échoue, l'entrée n'est pas supprimée. « Restaurer » réimporte ces fichiers. Les dossiers de Program Files et ProgramData et les entrées installées pour tout le PC demandent les droits administrateur.
+
+Les applications du Microsoft Store ne sont pas encore listées.
+
+## Tests
+
+`tests/OptimizingSoftware.Core.Tests` teste les règles (analyse, corbeille, doublons, restes…) sur des dossiers temporaires. `tests/OptimizingSoftware.Windows.Tests` lance les vraies lectures Windows (WMI, registre, dossiers, corbeille de Windows, export et réimport d'une clé de test) sur la machine Windows de GitHub à chaque modification ; ces tests sont ignorés hors Windows.
 
 ## Enregistrement en jeu
 

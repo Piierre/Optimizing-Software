@@ -13,6 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="OptimizingSoftware.Windows.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OptimizingSoftware.Core\OptimizingSoftware.Core.csproj" />
   </ItemGroup>
 

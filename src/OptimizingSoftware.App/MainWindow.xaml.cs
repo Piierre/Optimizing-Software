@@ -15,7 +15,7 @@ public partial class MainWindow : Window
 
         var isAdmin = Elevation.IsAdministrator();
         if (isAdmin) Title += " (administrateur)";
-        var quarantine = new Quarantine(WindowsCleanupRules.QuarantineRoot);
+        var quarantine = new Quarantine(WindowsCleanupRules.QuarantineRoot, registry: new WindowsRegistryStore());
 
         var cleanup = new CleanupViewModel(
             WindowsCleanupRules.For(isAdmin), quarantine, Confirm,
@@ -27,11 +27,17 @@ public partial class MainWindow : Window
             KnownFolders.PersonalFoldersAndDataDrives,
             onCleaned: cleanup.RefreshSessions,
             reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""));
+        var apps = new AppsViewModel(
+            InstalledAppsReader.Read, AppUninstaller.LeftoverParents, app => AppUninstaller.RunAsync(app),
+            quarantine, Confirm, isAdmin, Elevation.RestartAsAdministrator,
+            onCleaned: cleanup.RefreshSessions,
+            reveal: path => Process.Start("explorer.exe", $"\"{path}\""));
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
         CleanupTab.DataContext = cleanup;
         FilesTab.DataContext = files;
+        AppsTab.DataContext = apps;
         DiagnosticTab.DataContext = diagnostic;
         RecordingTab.DataContext = recording;
         Closed += (_, _) => recording.Dispose();

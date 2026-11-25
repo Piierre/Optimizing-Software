@@ -7,9 +7,30 @@ public sealed record QuarantineSession(
     string Id,
     string Label,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<QuarantineEntry> Entries)
+    IReadOnlyList<QuarantineEntry> Entries,
+    IReadOnlyList<RegistryBackup>? Registry = null)
 {
     public long TotalBytes => Entries.Sum(e => e.SizeBytes);
+
+    /// <summary>Clés de registre sauvegardées (vide pour les nettoyages de fichiers).</summary>
+    public IReadOnlyList<RegistryBackup> RegistryKeys => Registry ?? [];
+}
+
+/// <param name="Key">Clé complète supprimée (ex. « HKEY_CURRENT_USER\Software\...\Uninstall\X »).</param>
+/// <param name="BackupName">Fichier .reg de sauvegarde, dans le dossier de la session.</param>
+public sealed record RegistryBackup(string Key, string BackupName);
+
+/// <summary>Accès au registre, fourni par la partie Windows (exporter, supprimer, réimporter une clé).</summary>
+public interface IRegistryStore
+{
+    /// <summary>Exporte la clé et ses sous-clés dans un fichier .reg. Faux si la clé est introuvable ou protégée.</summary>
+    bool Export(string key, string regFile);
+
+    /// <summary>Supprime la clé et ses sous-clés. Faux si l'accès est refusé.</summary>
+    bool Delete(string key);
+
+    /// <summary>Réimporte un fichier .reg. Faux en cas d'échec.</summary>
+    bool Import(string regFile);
 }
 
 /// <param name="StoredName">Nom du fichier dans la corbeille interne.</param>
@@ -44,7 +65,8 @@ public sealed record DeleteOutcome(int DeletedFiles, long FreedBytes, int Locked
 /// Pour un fichier, le dossier de corbeille de son disque, ou null pour utiliser <see cref="Root"/>.
 /// Par défaut : <see cref="DefaultVolumeStoreRoot"/>. Remplaçable pour les tests.
 /// </param>
-public sealed class Quarantine(string root, Func<string, string?>? volumeStoreRoot = null)
+/// <param name="registry">Accès au registre, nécessaire seulement pour les nettoyages de clés.</param>
+public sealed class Quarantine(string root, Func<string, string?>? volumeStoreRoot = null, IRegistryStore? registry = null)
 {
     public const string VolumeFolderName = "OptimizingSoftware.Corbeille";
 
@@ -124,6 +146,43 @@ public sealed class Quarantine(string root, Func<string, string?>? volumeStoreRo
         return new CleanOutcome(entries.Count, entries.Sum(e => e.SizeBytes), skipped, id);
     }
 
+    /// <summary>
+    /// Sauvegarde chaque clé dans un fichier .reg, puis la supprime. Une clé qu'on ne peut pas sauvegarder
+    /// n'est jamais supprimée.
+    /// </summary>
+    public CleanOutcome MoveRegistryIn(string label, IEnumerable<string> keys, DateTimeOffset now)
+    {
+        if (registry is null) throw new InvalidOperationException("Accès au registre non configuré.");
+        var id = $"{now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}";
+        var sessionDir = Path.Combine(Root, id);
+        Directory.CreateDirectory(sessionDir);
+
+        var backups = new List<RegistryBackup>();
+        var skipped = 0;
+        foreach (var key in keys)
+        {
+            var name = $"cle-{backups.Count + skipped:D4}.reg";
+            var file = Path.Combine(sessionDir, name);
+            if (registry.Export(key, file) && File.Exists(file) && registry.Delete(key))
+            {
+                backups.Add(new RegistryBackup(key, name));
+            }
+            else
+            {
+                TryDeleteFile(file);
+                skipped++;
+            }
+        }
+
+        if (backups.Count == 0)
+        {
+            TryDeleteTree(sessionDir);
+            return new CleanOutcome(0, 0, skipped, null);
+        }
+        Save(new QuarantineSession(id, label, now, [], backups));
+        return new CleanOutcome(backups.Count, 0, skipped, id);
+    }
+
     public IReadOnlyList<QuarantineSession> List()
     {
         if (!Directory.Exists(Root)) return [];
@@ -172,14 +231,26 @@ public sealed class Quarantine(string root, Func<string, string?>? volumeStoreRo
             }
         }
 
-        if (remaining.Count == 0)
+        var remainingKeys = new List<RegistryBackup>();
+        foreach (var backup in session.RegistryKeys)
+        {
+            var file = Path.Combine(Root, sessionId, backup.BackupName);
+            if (registry is not null && File.Exists(file) && registry.Import(file))
+                restored++;
+            else
+                remainingKeys.Add(backup);
+        }
+
+        if (remaining.Count == 0 && remainingKeys.Count == 0)
         {
             TryDeleteTree(Path.Combine(Root, sessionId));
             DeleteVolumeDirs(sessionId, session.Entries);
         }
         else
-            Save(session with { Entries = remaining });
-        return new RestoreOutcome(restored, remaining.Count);
+        {
+            Save(session with { Entries = remaining, Registry = remainingKeys });
+        }
+        return new RestoreOutcome(restored, remaining.Count + remainingKeys.Count);
     }
 
     /// <summary>
