@@ -43,6 +43,16 @@
 
                 <TextBlock DockPanel.Dock="Top" Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,12" />
 
+                <Border DockPanel.Dock="Top" Style="{StaticResource Card}" Margin="0,0,0,12"
+                        Visibility="{Binding IsNotAdministrator, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Relancer en administrateur" Command="{Binding RestartAsAdminCommand}"
+                                Padding="12,6" VerticalAlignment="Center" />
+                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                                   Text="Avec les droits administrateur, l'appli peut aussi vider les fichiers temporaires de Windows, les téléchargements de Windows Update et les anciens journaux d'installation." />
+                    </DockPanel>
+                </Border>
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MinWidth="380" />
@@ -75,8 +85,9 @@
                         </ItemsControl>
                     </ScrollViewer>
 
-                    <!-- Corbeille interne -->
-                    <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
+                    <!-- Corbeille interne + corbeille de Windows -->
+                    <StackPanel Grid.Column="2">
+                    <Border Style="{StaticResource Card}" VerticalAlignment="Top">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,8">
                                 <Button DockPanel.Dock="Right" Content="Vider" Command="{Binding EmptyCommand}" Padding="10,4"
@@ -105,7 +116,92 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+                    <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Content="Vider" Command="{Binding EmptyRecycleBinCommand}" Padding="10,4"
+                                        Visibility="{Binding RecycleBinHasItems, Converter={StaticResource BoolToVisibility}}" />
+                                <TextBlock Text="Corbeille de Windows" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding RecycleBinText}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+                            <TextBlock Text="Attention : vider la corbeille de Windows est définitif." TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{StaticResource WarningBrush}" Margin="0,4,0,0"
+                                       Visibility="{Binding RecycleBinHasItems, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                    </Border>
+                    </StackPanel>
                 </Grid>
+            </DockPanel>
+        </TabItem>
+
+        <!-- ============ Onglet : fichiers personnels ============ -->
+        <TabItem Header="Fichiers" x:Name="FilesTab">
+            <DockPanel Margin="8,16,8,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}" FontSize="26" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" Opacity="0.7" Margin="0,4,12,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button Content="Vieux téléchargements" Command="{Binding ScanDownloadsCommand}" Padding="12,8" Margin="0,0,8,0" />
+                        <Button Content="Gros fichiers" Command="{Binding ScanLargeCommand}" Padding="12,8" Margin="0,0,8,0" />
+                        <Button Content="Doublons" Command="{Binding ScanDuplicatesCommand}" Padding="12,8" />
+                    </StackPanel>
+                </Grid>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <ProgressBar IsIndeterminate="True" Width="100" Margin="0,0,8,0"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Content="Annuler" Command="{Binding CancelScanCommand}" Padding="10,4" Margin="0,0,12,0"
+                                Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{Binding SelectedTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Button Content="Tout décocher" Command="{Binding SelectNoneCommand}" Padding="12,8" Margin="0,0,8,0" />
+                        <Button Content="Déplacer dans la corbeille" Command="{Binding CleanCommand}" Padding="16,8"
+                                Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <DataGrid ItemsSource="{Binding View}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single" IsReadOnly="False">
+                    <DataGrid.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="4,12,0,4" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </DataGrid.GroupStyle>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="" Width="40">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="2*" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Taille" Binding="{Binding Size}" SortMemberPath="SizeBytes" Width="90" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Modifié" Binding="{Binding Modified}" Width="100" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="2*" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Dossier" Binding="{Binding Folder}" Width="2*" IsReadOnly="True" />
+                        <DataGridTemplateColumn Header="" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Afficher" Padding="8,2"
+                                            Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
             </DockPanel>
         </TabItem>
 

@@ -95,6 +95,14 @@ public sealed class CleanupTests : IDisposable
     }
 
     [Fact]
+    public void A_drive_root_contains_its_files()
+    {
+        var driveRoot = Path.GetPathRoot(_dir)!;
+        Assert.True(PathSafety.IsInside(P("temp/a.tmp"), [driveRoot]));
+        Assert.False(PathSafety.IsInside(driveRoot, [driveRoot]));
+    }
+
+    [Fact]
     public void Clean_then_restore_puts_everything_back()
     {
         var a = File("temp/a.tmp", size: 300);

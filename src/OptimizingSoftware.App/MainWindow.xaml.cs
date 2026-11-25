@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using OptimizingSoftware.App.ViewModels;
 using OptimizingSoftware.Core.Cleanup;
@@ -12,14 +13,25 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        var isAdmin = Elevation.IsAdministrator();
+        if (isAdmin) Title += " (administrateur)";
+        var quarantine = new Quarantine(WindowsCleanupRules.QuarantineRoot);
+
         var cleanup = new CleanupViewModel(
-            WindowsCleanupRules.Default(),
-            new Quarantine(WindowsCleanupRules.QuarantineRoot),
-            Confirm);
+            WindowsCleanupRules.For(isAdmin), quarantine, Confirm,
+            new WindowsRecycleBin(), isAdmin, Elevation.RestartAsAdministrator);
+        var files = new FilesViewModel(
+            quarantine, Confirm,
+            () => KnownFolders.Downloads,
+            KnownFolders.PersonalFolders,
+            KnownFolders.PersonalFoldersAndDataDrives,
+            onCleaned: cleanup.RefreshSessions,
+            reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""));
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
         CleanupTab.DataContext = cleanup;
+        FilesTab.DataContext = files;
         DiagnosticTab.DataContext = diagnostic;
         RecordingTab.DataContext = recording;
         Closed += (_, _) => recording.Dispose();

@@ -18,6 +18,29 @@ public static class WindowsCleanupRules
 
     private const string CloseBrowser = "Ferme le navigateur avant de nettoyer, sinon une partie du cache est ignorée. Tu resteras connecté à tes sites.";
 
+    /// <summary>Règles disponibles selon les droits de l'application.</summary>
+    public static IReadOnlyList<CleanupRule> For(bool isAdministrator) =>
+        isAdministrator ? [.. Default(), .. AdminOnly()] : Default();
+
+    /// <summary>Dossiers système, accessibles seulement avec les droits administrateur.</summary>
+    public static IReadOnlyList<CleanupRule> AdminOnly()
+    {
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        return
+        [
+            new("windows-temp", "Fichiers temporaires de Windows",
+                "Dossier temporaire du système, rempli par les mises à jour et les installations.",
+                [Path.Combine(windows, "Temp")], TimeSpan.FromDays(2)),
+            new("windows-update", "Téléchargements de Windows Update",
+                "Fichiers de mises à jour déjà installées. Windows les retélécharge si besoin.",
+                [Path.Combine(windows, @"SoftwareDistribution\Download")], TimeSpan.FromDays(2),
+                Note: "Les fichiers d'une mise à jour en cours sont laissés en place."),
+            new("windows-logs", "Journaux d'installation de Windows",
+                "Anciens journaux du composant de mise à jour (CBS) et de l'installation.",
+                [Path.Combine(windows, @"Logs\CBS"), Path.Combine(windows, "Panther")], TimeSpan.FromDays(30)),
+        ];
+    }
+
     public static IReadOnlyList<CleanupRule> Default() =>
     [
         new("user-temp", "Fichiers temporaires",

@@ -12,7 +12,9 @@ public static class PathSafety
         var full = Path.GetFullPath(path);
         foreach (var root in roots)
         {
-            var r = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+            // Une racine de disque (« D:\ ») se termine déjà par un séparateur : ne pas le doubler.
+            var r = Path.GetFullPath(root);
+            if (!Path.EndsInDirectorySeparator(r)) r += Path.DirectorySeparatorChar;
             if (full.Length > r.Length && full.StartsWith(r, Cmp))
                 return true;
         }
