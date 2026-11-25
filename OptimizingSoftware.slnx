@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OptimizingSoftware.App/OptimizingSoftware.App.csproj" />
+    <Project Path="src/OptimizingSoftware.Core/OptimizingSoftware.Core.csproj" />
+    <Project Path="src/OptimizingSoftware.Windows/OptimizingSoftware.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OptimizingSoftware.Core.Tests/OptimizingSoftware.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>OptimizingSoftware</AssemblyName>
+    <Product>Optimizing Software</Product>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- ThemeMode (thème Fluent de WPF) est encore marqué expérimental. -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizingSoftware.Core\OptimizingSoftware.Core.csproj" />
+    <ProjectReference Include="..\OptimizingSoftware.Windows\OptimizingSoftware.Windows.csproj" />
+  </ItemGroup>
+
+</Project>
