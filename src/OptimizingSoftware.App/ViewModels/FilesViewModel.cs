@@ -135,6 +135,14 @@ public sealed partial class FilesViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void CancelScan()
+    {
+        ScanDownloadsCommand.Cancel();
+        ScanLargeCommand.Cancel();
+        ScanDuplicatesCommand.Cancel();
+    }
+
+    [RelayCommand]
     private void SelectNone()
     {
         foreach (var f in Files) f.IsSelected = false;

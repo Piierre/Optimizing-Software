@@ -95,6 +95,14 @@ public sealed class CleanupTests : IDisposable
     }
 
     [Fact]
+    public void A_drive_root_contains_its_files()
+    {
+        var driveRoot = Path.GetPathRoot(_dir)!;
+        Assert.True(PathSafety.IsInside(P("temp/a.tmp"), [driveRoot]));
+        Assert.False(PathSafety.IsInside(driveRoot, [driveRoot]));
+    }
+
+    [Fact]
     public void Clean_then_restore_puts_everything_back()
     {
         var a = File("temp/a.tmp", size: 300);
@@ -158,7 +166,7 @@ public sealed class CleanupTests : IDisposable
 
         var freed = q.PurgeExpired(now);
 
-        Assert.Equal(100, freed);
+        Assert.Equal(100, freed.FreedBytes);
         Assert.Equal("Récent", Assert.Single(q.List()).Label);
     }
 
@@ -168,5 +176,57 @@ public sealed class CleanupTests : IDisposable
         var q = new Quarantine(P("quarantine"));
         Directory.CreateDirectory(P("quarantine"));
         Assert.Throws<InvalidOperationException>(() => q.DeletePermanently(".."));
+    }
+
+    [Fact]
+    public void Read_only_files_are_deleted_permanently()
+    {
+        var a = File("temp/readonly.dll", size: 300);
+        System.IO.File.SetAttributes(a, FileAttributes.ReadOnly);
+        var q = new Quarantine(P("quarantine"));
+        var id = q.MoveIn("Test", [a], [P("temp")], DateTimeOffset.Now).SessionId!;
+
+        var outcome = q.DeletePermanently(id);
+
+        Assert.Equal(1, outcome.DeletedFiles);
+        Assert.Equal(300, outcome.FreedBytes);
+        Assert.Equal(0, outcome.LockedFiles);
+        Assert.Empty(q.List());
+        Assert.False(Directory.Exists(P("quarantine/" + id)));
+    }
+
+    [Fact]
+    public void Undeletable_files_stay_in_the_quarantine_instead_of_crashing()
+    {
+        var a = File("temp/a.tmp", size: 300);
+        var b = File("temp/loaded.dll", size: 200);
+        var locked = true;
+        var q = new Quarantine(P("quarantine")) { IsLockedForTests = p => locked && p.EndsWith(".dll") };
+        var id = q.MoveIn("Test", [a, b], [P("temp")], DateTimeOffset.Now).SessionId!;
+
+        var outcome = q.DeletePermanently(id);
+
+        Assert.Equal(1, outcome.DeletedFiles);
+        Assert.Equal(300, outcome.FreedBytes);
+        Assert.Equal(1, outcome.LockedFiles);
+        var left = Assert.Single(q.List());           // toujours listé, retentable plus tard
+        Assert.Equal(b, Assert.Single(left.Entries).OriginalPath);
+
+        locked = false;                                // l'application a été fermée
+        var retry = q.DeletePermanently(id);
+
+        Assert.Equal(1, retry.DeletedFiles);
+        Assert.Empty(q.List());
+    }
+
+    [Fact]
+    public void Purge_never_throws()
+    {
+        var q = new Quarantine(P("quarantine"));
+        q.MoveIn("Vieux", [File("temp/old.tmp", size: 100)], [P("temp")], DateTimeOffset.Now.AddDays(-8));
+
+        var outcome = q.PurgeExpired(DateTimeOffset.Now);
+
+        Assert.Equal(100, outcome.FreedBytes);
     }
 }

@@ -10,8 +10,8 @@ Objectif (recentré le 25 novembre 2026) : garder le PC propre dans la durée en
 | --- | --- | --- |
 | 1 | Cadrage | Fait |
 | 2 | Diagnostic performances et enregistrement en jeu | Fait |
-| 3 | Corbeille interne + fichiers temporaires et caches | En cours |
-| 4 | Vieux téléchargements, gros fichiers, doublons | À venir |
+| 3 | Corbeille interne + fichiers temporaires et caches | Fait |
+| 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | En cours |
 | 5 | Applications installées et restes de désinstallation | À venir |
 | 6 | Programmes au démarrage et processus | À venir |
 | 7 | Finitions et installeur | À venir |
@@ -48,6 +48,20 @@ Au lancement, l'application prend une photo du PC (lecture seule, sans droits ad
 | Disque de Windows | Disque dur au lieu d'un SSD, moins de 15 % / 10 % libres |
 | Mode d'alimentation | Économie d'énergie, ou Utilisation normale pour jouer |
 | Processeur | Moins de 8 threads |
+
+## Fichiers personnels
+
+L'onglet « Fichiers » propose trois analyses, lancées à la demande :
+
+| Analyse | Où | Coché par défaut |
+| --- | --- | --- |
+| Vieux téléchargements | Dossier Téléchargements, fichiers non modifiés depuis 3 mois | Installateurs (.exe, .msi…) et images disque (.iso) |
+| Gros fichiers | Dossiers personnels et autres disques, fichiers de plus de 500 Mo | Rien |
+| Doublons | Mêmes dossiers, fichiers de plus de 1 Mo au contenu identique (SHA-256) | Les copies ; l'original est gardé |
+
+Les jeux installés (Steam, Epic, Xbox, Riot…), `Program Files`, `AppData` et `Windows` ne sont jamais parcourus. L'appli refuse de retirer tous les exemplaires d'un même doublon. Les fichiers d'un autre disque vont dans un dossier `OptimizingSoftware.Corbeille` à la racine de ce disque, pour ne pas remplir le disque de Windows.
+
+Avec les droits administrateur (bouton « Relancer en administrateur »), l'onglet Nettoyage ajoute `C:\Windows\Temp`, les téléchargements de Windows Update et les anciens journaux d'installation. La corbeille de Windows peut aussi être vidée, après une confirmation qui précise que c'est définitif.
 
 ## Enregistrement en jeu
 
