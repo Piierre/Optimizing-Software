@@ -38,7 +38,7 @@ public static class AppUninstaller
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
             Path.Combine(local, "Programs"),
-        }.Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }.Where(p => !string.IsNullOrEmpty(p) && Directory.Exists(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var data = new[]
         {
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
@@ -46,7 +46,8 @@ public static class AppUninstaller
             local,
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "LocalLow"),
         };
-        return ([.. programs, .. data.Where(p => !string.IsNullOrEmpty(p))],
+        // Local\Programs, par exemple, n'existe que si une appli s'y est déjà installée.
+        return ([.. programs, .. data.Where(p => !string.IsNullOrEmpty(p) && Directory.Exists(p))],
             programs.ToHashSet(StringComparer.OrdinalIgnoreCase));
     }
 }
