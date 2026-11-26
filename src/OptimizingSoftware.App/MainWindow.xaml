@@ -153,6 +153,23 @@
                     </StackPanel>
                 </Grid>
 
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,12" IsEnabled="{Binding IsIdle}">
+                    <TextBlock Text="Disques à analyser :" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0"
+                               ToolTip="Sur le disque de Windows, seuls tes dossiers personnels sont parcourus (Bureau, Documents, Téléchargements…). Les autres disques sont parcourus en entier, sauf les jeux installés." />
+                    <ItemsControl ItemsSource="{Binding Drives}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding IsSelected}" Content="{Binding Label}" Margin="0,0,16,0" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </WrapPanel>
+
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <ProgressBar IsIndeterminate="True" Width="100" Margin="0,0,8,0"

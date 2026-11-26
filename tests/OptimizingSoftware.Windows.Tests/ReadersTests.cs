@@ -84,6 +84,17 @@ public class ReadersTests
     }
 
     [WindowsFact]
+    public void Disques_fixes_sont_listes_avec_celui_de_windows_en_premier()
+    {
+        var drives = KnownFolders.FixedDrives();
+        Assert.NotEmpty(drives);
+        Assert.True(drives[0].IsSystem);
+        Assert.All(drives, d => Assert.InRange(d.FreeBytes, 0, d.TotalBytes));
+        Assert.Equal(KnownFolders.PersonalFolders().Count,
+            Core.Files.DriveFilter.Keep(KnownFolders.PersonalFolders(), [drives[0].Root]).Count);
+    }
+
+    [WindowsFact]
     public void Analyse_du_nettoyage_ne_touche_a_rien()
     {
         var temp = Path.Combine(Path.GetTempPath(), "os-test-" + Guid.NewGuid().ToString("N"));

@@ -26,12 +26,17 @@ public partial class MainWindow : Window
             KnownFolders.PersonalFolders,
             KnownFolders.PersonalFoldersAndDataDrives,
             onCleaned: cleanup.RefreshSessions,
+<<<<<<< HEAD
             reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""));
         var apps = new AppsViewModel(
             InstalledAppsReader.Read, AppUninstaller.LeftoverParents, app => AppUninstaller.RunAsync(app),
             quarantine, Confirm, isAdmin, Elevation.RestartAsAdministrator,
             onCleaned: cleanup.RefreshSessions,
             reveal: path => Process.Start("explorer.exe", $"\"{path}\""));
+=======
+            reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
+            drives: KnownFolders.FixedDrives);
+>>>>>>> choix-des-disques
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
