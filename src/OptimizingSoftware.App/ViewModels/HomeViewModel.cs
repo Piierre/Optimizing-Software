@@ -105,10 +105,10 @@ public sealed partial class HomeViewModel : ObservableObject
                 }
             });
             await Task.WhenAll(
-                first ? _cleanup.InitializeAsync() : _cleanup.ScanCommand.ExecuteAsync(null),
-                _apps.ScanCommand.ExecuteAsync(null),
-                _startup.RefreshCommand.ExecuteAsync(null),
-                downloads);
+                Track("nettoyage", first ? _cleanup.InitializeAsync() : _cleanup.ScanCommand.ExecuteAsync(null)),
+                Track("applications et restes", _apps.ScanCommand.ExecuteAsync(null)),
+                Track("démarrage et processus", _startup.RefreshCommand.ExecuteAsync(null)),
+                Track("vieux téléchargements", downloads));
             _oldDownloads = await downloads;
         }
         finally
@@ -116,6 +116,17 @@ public sealed partial class HomeViewModel : ObservableObject
             IsBusy = false;
             Refresh();
         }
+    }
+
+    private readonly Dictionary<string, Task> _running = [];
+
+    /// <summary>Analyses pas encore terminées (pour savoir laquelle bloque si l'ouverture est trop longue).</summary>
+    public IReadOnlyList<string> PendingScans() => _running.Where(r => !r.Value.IsCompleted).Select(r => r.Key).ToList();
+
+    private Task Track(string name, Task task)
+    {
+        _running[name] = task;
+        return task;
     }
 
     [RelayCommand]

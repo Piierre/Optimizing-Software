@@ -40,7 +40,7 @@ public partial class App : Application
             var done = await Task.WhenAny(window.InitialScans, Task.Delay(TimeSpan.FromMinutes(5)));
             if (done != window.InitialScans)
             {
-                Report("Analyses d'ouverture trop longues.");
+                Report("Analyses d'ouverture trop longues. Encore en cours : " + string.Join(", ", window.PendingScans()) + ".");
                 code = 2;
             }
             else

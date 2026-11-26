@@ -56,10 +56,16 @@ public partial class MainWindow : Window
         // Analyse et diagnostic sont en lecture seule : on peut les lancer dès l'ouverture.
         Loaded += (_, _) =>
         {
-            InitialScans = Task.WhenAll(
-                diagnostic.RunDiagnosticCommand.ExecuteAsync(null),
-                home.InitializeAsync(),
-                CheckForUpdateAsync());
+            var diag = diagnostic.RunDiagnosticCommand.ExecuteAsync(null);
+            var update = CheckForUpdateAsync();
+            InitialScans = Task.WhenAll(diag, home.InitializeAsync(), update);
+            _pending = () =>
+            {
+                var pending = new List<string>(home.PendingScans());
+                if (!diag.IsCompleted) pending.Add("diagnostic");
+                if (!update.IsCompleted) pending.Add("recherche de mise à jour");
+                return pending;
+            };
             _statuses = () => [cleanup.Status, apps.Status, startup.Status];
         };
     }
@@ -81,6 +87,11 @@ public partial class MainWindow : Window
         "startup" => StartupTab,
         _ => HomeTab,
     };
+
+    private Func<IReadOnlyList<string>> _pending = () => [];
+
+    /// <summary>Analyses d'ouverture encore en cours (diagnostic du test de démarrage).</summary>
+    public IReadOnlyList<string> PendingScans() => _pending();
 
     private Func<IEnumerable<string?>> _statuses = () => [];
 
