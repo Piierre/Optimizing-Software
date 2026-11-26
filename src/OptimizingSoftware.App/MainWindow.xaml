@@ -4,7 +4,7 @@
         xmlns:vm="clr-namespace:OptimizingSoftware.App.ViewModels"
         xmlns:local="clr-namespace:OptimizingSoftware.App"
         Title="Optimizing Software" Height="760" Width="1040" MinWidth="720" MinHeight="480"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <local:BrushKeyConverter x:Key="BrushKey" />
@@ -16,6 +16,16 @@
             <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
         </Style>
     </Window.Resources>
+
+    <DockPanel>
+    <!-- Bandeau de mise à jour, affiché seulement quand une version plus récente est publiée. -->
+    <Border x:Name="UpdateBanner" DockPanel.Dock="Top" Visibility="Collapsed" Margin="16,12,16,0" Padding="12,8" CornerRadius="8"
+            Background="{DynamicResource AccentFillColorDefaultBrush}">
+        <DockPanel>
+            <Button x:Name="UpdateButton" DockPanel.Dock="Right" Content="Télécharger" Padding="12,4" Click="OnUpdateClick" />
+            <TextBlock x:Name="UpdateText" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+        </DockPanel>
+    </Border>
 
     <TabControl Margin="16,8,16,16">
         <!-- ============ Onglet : nettoyage ============ -->
@@ -689,4 +699,5 @@
             </ScrollViewer>
         </TabItem>
     </TabControl>
+    </DockPanel>
 </Window>
