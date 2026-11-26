@@ -278,6 +278,139 @@
             </DockPanel>
         </TabItem>
 
+        <!-- ============ Onglet : démarrage et processus ============ -->
+        <TabItem Header="Démarrage et processus" x:Name="StartupTab">
+            <DockPanel Margin="8,16,8,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Démarrage et processus" FontSize="26" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,4,12,0"
+                                   Text="Moins de programmes au démarrage, c'est un PC qui démarre plus vite et plus de mémoire libre pour les jeux. Désactiver ne désinstalle rien : tu peux réactiver à tout moment." />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Analyser" Command="{Binding RefreshCommand}" Padding="16,8" VerticalAlignment="Top"
+                            Style="{DynamicResource AccentButtonStyle}" />
+                </Grid>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <ProgressBar DockPanel.Dock="Right" IsIndeterminate="True" Width="100"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <TabControl SelectedIndex="{Binding Section}" IsEnabled="{Binding IsIdle}">
+                    <TabItem Header="Au démarrage">
+                        <DockPanel Margin="0,8,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Content="Désactiver ceux conseillés" Command="{Binding DisableSuggestedCommand}" Padding="16,8"
+                                        Style="{DynamicResource AccentButtonStyle}" />
+                                <TextBlock Text="{Binding StartupSummary}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <DataGrid ItemsSource="{Binding Startup}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="Conseil" Width="110" SortMemberPath="Rank">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="10" Padding="8,1" HorizontalAlignment="Left"
+                                                        Background="{Binding AdviceBrush, Converter={StaticResource BrushKey}}">
+                                                    <TextBlock Text="{Binding AdviceText}" Foreground="White" FontSize="12" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="2*" />
+                                    <DataGridTextColumn Header="État" Binding="{Binding StateText}" Width="90" />
+                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="2*" />
+                                    <DataGridTextColumn Header="Pour" Binding="{Binding Scope}" Width="90" />
+                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="4*">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="TextWrapping" Value="Wrap" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTemplateColumn Header="" Width="190">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="{Binding ToggleText}" Padding="8,2" Margin="0,0,6,0"
+                                                            Command="{Binding DataContext.ToggleCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Afficher" Padding="8,2"
+                                                            Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                            CommandParameter="{Binding Path}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <TabItem Header="Processus">
+                        <DockPanel Margin="0,8,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <CheckBox DockPanel.Dock="Right" Content="Seulement ceux à surveiller" IsChecked="{Binding OnlyFlagged}" />
+                                <TextBlock Text="{Binding ProcessesSummary}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"
+                                       Text="« Suspect » ne veut pas dire virus : ce sont des signes qui méritent un coup d'œil (nom d'un programme de Windows au mauvais endroit, programme sans signature dans un dossier temporaire, mineur connu). En cas de doute, lance une analyse complète avec Microsoft Defender." />
+                            <DataGrid ItemsSource="{Binding ProcessesView}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="95" SortMemberPath="Rank">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="10" Padding="8,1" HorizontalAlignment="Left"
+                                                        Background="{Binding VerdictBrush, Converter={StaticResource BrushKey}}">
+                                                    <TextBlock Text="{Binding VerdictText}" Foreground="White" FontSize="12" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Programme" Binding="{Binding Name}" Width="2*" />
+                                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*" />
+                                    <DataGridTextColumn Header="Mémoire" Binding="{Binding Memory}" SortMemberPath="MemoryBytes" Width="90" />
+                                    <DataGridTextColumn Header="Processeur" Binding="{Binding Cpu}" SortMemberPath="CpuPercent" Width="90" />
+                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="2*" />
+                                    <DataGridTextColumn Header="Signature" Binding="{Binding Signature}" Width="90" />
+                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reasons}" Width="4*">
+                                        <DataGridTextColumn.ElementStyle>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="TextWrapping" Value="Wrap" />
+                                            </Style>
+                                        </DataGridTextColumn.ElementStyle>
+                                    </DataGridTextColumn>
+                                    <DataGridTemplateColumn Header="" Width="260">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Button Content="Fermer" Padding="8,2" Margin="0,0,6,0" IsEnabled="{Binding CanClose}"
+                                                            Command="{Binding DataContext.CloseProcessCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Afficher" Padding="8,2" Margin="0,0,6,0"
+                                                            Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                            CommandParameter="{Binding Path}" />
+                                                    <Button Content="Chercher en ligne" Padding="8,2"
+                                                            Command="{Binding DataContext.SearchOnlineCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                            CommandParameter="{Binding Name}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
+        </TabItem>
+
         <!-- ============ Onglet : fichiers personnels ============ -->
         <TabItem Header="Fichiers" x:Name="FilesTab">
             <DockPanel Margin="8,16,8,0">
