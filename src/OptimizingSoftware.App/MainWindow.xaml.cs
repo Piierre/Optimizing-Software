@@ -29,7 +29,7 @@ public partial class MainWindow : Window
             reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
             drives: KnownFolders.FixedDrives);
         var apps = new AppsViewModel(
-            InstalledAppsReader.Read, AppUninstaller.LeftoverParents, app => AppUninstaller.RunAsync(app),
+            () => GameLibrariesReader.ReadAllApps(), AppUninstaller.LeftoverParents, app => AppUninstaller.RunAsync(app),
             quarantine, Confirm, isAdmin, Elevation.RestartAsAdministrator,
             onCleaned: cleanup.RefreshSessions,
             reveal: path => Process.Start("explorer.exe", $"\"{path}\""));
@@ -48,6 +48,7 @@ public partial class MainWindow : Window
         {
             diagnostic.RunDiagnosticCommand.Execute(null);
             await cleanup.InitializeAsync();
+            apps.ScanCommand.Execute(null);
         };
     }
 

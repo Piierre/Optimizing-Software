@@ -134,6 +134,150 @@
             </DockPanel>
         </TabItem>
 
+        <!-- ============ Onglet : applications ============ -->
+        <TabItem Header="Jeux et logiciels" x:Name="AppsTab">
+            <DockPanel Margin="8,16,8,0">
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Jeux et logiciels" FontSize="26" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,4,12,0"
+                                   Text="Désinstalle ce qui ne sert plus, puis retire les dossiers et les entrées que les applications laissent derrière elles. Tout passe par la corbeille (7 jours pour changer d'avis)." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button Content="Relancer en administrateur" Command="{Binding RestartAsAdminCommand}" Padding="12,8" Margin="0,0,8,0"
+                                Visibility="{Binding IsNotAdministrator, Converter={StaticResource BoolToVisibility}}"
+                                ToolTip="Nécessaire pour les dossiers de Program Files et ProgramData, et les entrées installées pour tout le PC." />
+                        <Button Content="Analyser" Command="{Binding ScanCommand}" Padding="16,8"
+                                Style="{DynamicResource AccentButtonStyle}" />
+                    </StackPanel>
+                </Grid>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <ProgressBar DockPanel.Dock="Right" IsIndeterminate="True" Width="100"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <TabControl SelectedIndex="{Binding Section}" IsEnabled="{Binding IsIdle}">
+                    <!-- Applications installées -->
+                    <TabItem Header="Jeux et logiciels">
+                        <DockPanel Margin="0,8,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding AppsSummary}" Opacity="0.7" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <StackPanel Orientation="Horizontal">
+                                    <ComboBox SelectedIndex="{Binding Category}" Width="150" Margin="0,0,8,0">
+                                        <ComboBoxItem Content="Tout" />
+                                        <ComboBoxItem Content="Jeux" />
+                                        <ComboBoxItem Content="Logiciels" />
+                                    </ComboBox>
+                                    <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" Width="320"
+                                             ToolTip="Chercher par nom, éditeur ou launcher (Steam, Epic…)" />
+                                </StackPanel>
+                            </DockPanel>
+                            <DataGrid ItemsSource="{Binding AppsView}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="3*" />
+                                    <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="80" />
+                                    <DataGridTextColumn Header="Taille" Binding="{Binding Size}" SortMemberPath="SortSize" Width="90" />
+                                    <DataGridTextColumn Header="Disque" Binding="{Binding Drive}" Width="60" />
+                                    <DataGridTextColumn Header="Launcher" Binding="{Binding Source}" Width="100" />
+                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="2*" />
+                                    <DataGridTextColumn Header="Installée le" Binding="{Binding Installed}" SortMemberPath="App.InstallDate" Width="100" />
+                                    <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="*" />
+                                    <DataGridTemplateColumn Header="" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="{Binding UninstallLabel}" Padding="8,2"
+                                                        Command="{Binding DataContext.UninstallCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                        CommandParameter="{Binding}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <!-- Dossiers restants -->
+                    <TabItem Header="Dossiers restants">
+                        <DockPanel Margin="0,8,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <TextBlock Text="{Binding LeftoversTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                    <Button Content="Déplacer dans la corbeille" Command="{Binding CleanLeftoversCommand}" Padding="16,8"
+                                            Style="{DynamicResource AccentButtonStyle}" />
+                                </StackPanel>
+                                <TextBlock TextWrapping="Wrap" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0"
+                                           Text="Dossiers de Program Files et AppData qui ne correspondent à aucune application installée et qui n'ont pas bougé depuis 2 mois. Seuls les cas clairs sont cochés." />
+                            </DockPanel>
+                            <DataGrid ItemsSource="{Binding Leftovers}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="40">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Dossier" Binding="{Binding Name}" Width="2*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Taille" Binding="{Binding Size}" SortMemberPath="SizeBytes" Width="90" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Modifié" Binding="{Binding Modified}" Width="100" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="3*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Dans" Binding="{Binding Parent}" Width="2*" IsReadOnly="True" />
+                                    <DataGridTemplateColumn Header="" Width="90">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="Afficher" Padding="8,2"
+                                                        Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
+                                                        CommandParameter="{Binding Path}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <!-- Entrées cassées -->
+                    <TabItem Header="Entrées cassées">
+                        <DockPanel Margin="0,8,0,0">
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <TextBlock Text="{Binding BrokenTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                    <Button Content="Retirer de la liste" Command="{Binding RemoveBrokenCommand}" Padding="16,8"
+                                            Style="{DynamicResource AccentButtonStyle}" />
+                                </StackPanel>
+                                <TextBlock TextWrapping="Wrap" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0"
+                                           Text="Applications encore listées dans « Applications installées » de Windows alors qu'elles ont disparu. Chaque entrée est sauvegardée avant d'être retirée." />
+                            </DockPanel>
+                            <DataGrid ItemsSource="{Binding Broken}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="40">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="2*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Installée pour" Binding="{Binding Where}" Width="*" IsReadOnly="True" />
+                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="3*" IsReadOnly="True" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
+        </TabItem>
+
         <!-- ============ Onglet : fichiers personnels ============ -->
         <TabItem Header="Fichiers" x:Name="FilesTab">
             <DockPanel Margin="8,16,8,0">
@@ -219,140 +363,6 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-            </DockPanel>
-        </TabItem>
-
-        <!-- ============ Onglet : applications ============ -->
-        <TabItem Header="Applications" x:Name="AppsTab">
-            <DockPanel Margin="8,16,8,0">
-                <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel>
-                        <TextBlock Text="Applications" FontSize="26" FontWeight="SemiBold" />
-                        <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,4,12,0"
-                                   Text="Désinstalle ce qui ne sert plus, puis retire les dossiers et les entrées que les applications laissent derrière elles. Tout passe par la corbeille (7 jours pour changer d'avis)." />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                        <Button Content="Relancer en administrateur" Command="{Binding RestartAsAdminCommand}" Padding="12,8" Margin="0,0,8,0"
-                                Visibility="{Binding IsNotAdministrator, Converter={StaticResource BoolToVisibility}}"
-                                ToolTip="Nécessaire pour les dossiers de Program Files et ProgramData, et les entrées installées pour tout le PC." />
-                        <Button Content="Analyser" Command="{Binding ScanCommand}" Padding="16,8"
-                                Style="{DynamicResource AccentButtonStyle}" />
-                    </StackPanel>
-                </Grid>
-
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                    <ProgressBar DockPanel.Dock="Right" IsIndeterminate="True" Width="100"
-                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
-                    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" FontWeight="SemiBold" VerticalAlignment="Center" />
-                </DockPanel>
-
-                <TabControl SelectedIndex="{Binding Section}" IsEnabled="{Binding IsIdle}">
-                    <!-- Applications installées -->
-                    <TabItem Header="Installées">
-                        <DockPanel Margin="0,8,0,0">
-                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding AppsSummary}" Opacity="0.7" VerticalAlignment="Center" Margin="12,0,0,0" />
-                                <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" MaxWidth="360" HorizontalAlignment="Left"
-                                         ToolTip="Chercher par nom ou éditeur" />
-                            </DockPanel>
-                            <DataGrid ItemsSource="{Binding AppsView}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single" IsReadOnly="True">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="3*" />
-                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="2*" />
-                                    <DataGridTextColumn Header="Taille" Binding="{Binding Size}" SortMemberPath="SortSize" Width="90" />
-                                    <DataGridTextColumn Header="Installée le" Binding="{Binding Installed}" SortMemberPath="App.InstallDate" Width="100" />
-                                    <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="*" />
-                                    <DataGridTemplateColumn Header="" Width="120">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Button Content="Désinstaller" Padding="8,2" IsEnabled="{Binding CanUninstall}"
-                                                        Command="{Binding DataContext.UninstallCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
-                                                        CommandParameter="{Binding}" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </DockPanel>
-                    </TabItem>
-
-                    <!-- Dossiers restants -->
-                    <TabItem Header="Dossiers restants">
-                        <DockPanel Margin="0,8,0,0">
-                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <TextBlock Text="{Binding LeftoversTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
-                                    <Button Content="Déplacer dans la corbeille" Command="{Binding CleanLeftoversCommand}" Padding="16,8"
-                                            Style="{DynamicResource AccentButtonStyle}" />
-                                </StackPanel>
-                                <TextBlock TextWrapping="Wrap" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0"
-                                           Text="Dossiers de Program Files et AppData qui ne correspondent à aucune application installée et qui n'ont pas bougé depuis 2 mois. Seuls les cas clairs sont cochés." />
-                            </DockPanel>
-                            <DataGrid ItemsSource="{Binding Leftovers}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single">
-                                <DataGrid.Columns>
-                                    <DataGridTemplateColumn Header="" Width="40">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="Dossier" Binding="{Binding Name}" Width="2*" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Taille" Binding="{Binding Size}" SortMemberPath="SizeBytes" Width="90" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Modifié" Binding="{Binding Modified}" Width="100" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="3*" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Dans" Binding="{Binding Parent}" Width="2*" IsReadOnly="True" />
-                                    <DataGridTemplateColumn Header="" Width="90">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Button Content="Afficher" Padding="8,2"
-                                                        Command="{Binding DataContext.RevealCommand, RelativeSource={RelativeSource AncestorType=TabControl}}"
-                                                        CommandParameter="{Binding Path}" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </DockPanel>
-                    </TabItem>
-
-                    <!-- Entrées cassées -->
-                    <TabItem Header="Entrées cassées">
-                        <DockPanel Margin="0,8,0,0">
-                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                    <TextBlock Text="{Binding BrokenTotal}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,12,0" />
-                                    <Button Content="Retirer de la liste" Command="{Binding RemoveBrokenCommand}" Padding="16,8"
-                                            Style="{DynamicResource AccentButtonStyle}" />
-                                </StackPanel>
-                                <TextBlock TextWrapping="Wrap" Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0"
-                                           Text="Applications encore listées dans « Applications installées » de Windows alors qu'elles ont disparu. Chaque entrée est sauvegardée avant d'être retirée." />
-                            </DockPanel>
-                            <DataGrid ItemsSource="{Binding Broken}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
-                                      HeadersVisibility="Column" GridLinesVisibility="None" SelectionMode="Single">
-                                <DataGrid.Columns>
-                                    <DataGridTemplateColumn Header="" Width="40">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" />
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="Nom" Binding="{Binding Name}" Width="2*" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="*" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Installée pour" Binding="{Binding Where}" Width="*" IsReadOnly="True" />
-                                    <DataGridTextColumn Header="Pourquoi" Binding="{Binding Reason}" Width="3*" IsReadOnly="True" />
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </DockPanel>
-                    </TabItem>
-                </TabControl>
             </DockPanel>
         </TabItem>
 

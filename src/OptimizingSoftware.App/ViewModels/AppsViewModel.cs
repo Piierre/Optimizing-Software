@@ -44,7 +44,8 @@ public sealed partial class AppsViewModel : ObservableObject
         _onCleaned = onCleaned;
         _reveal = reveal;
         AppsView = CollectionViewSource.GetDefaultView(Apps);
-        AppsView.Filter = o => o is AppItem a && a.MatchesSearch(Search);
+        AppsView.Filter = o => o is AppItem a && a.MatchesSearch(Search)
+                                         && (Category == 0 || (Category == 1) == a.App.IsGame);
         AppsView.SortDescriptions.Add(new SortDescription(nameof(AppItem.SortSize), ListSortDirection.Descending));
     }
 
@@ -64,6 +65,12 @@ public sealed partial class AppsViewModel : ObservableObject
     private string _search = "";
 
     partial void OnSearchChanged(string value) => AppsView.Refresh();
+
+    /// <summary>0 = tout, 1 = jeux, 2 = logiciels.</summary>
+    [ObservableProperty]
+    private int _category;
+
+    partial void OnCategoryChanged(int value) => AppsView.Refresh();
 
     [ObservableProperty]
     private string? _status;
@@ -119,7 +126,10 @@ public sealed partial class AppsViewModel : ObservableObject
 
             Apps.Clear();
             foreach (var a in apps.Where(a => !a.IsBroken)) Apps.Add(new AppItem(a));
-            AppsSummary = $"{Apps.Count.ToString("N0", Fr)} applications · {Sizes.Format(Apps.Sum(a => a.App.SizeBytes ?? 0))} déclarés";
+            var games = Apps.Where(a => a.App.IsGame).ToList();
+            var software = Apps.Where(a => !a.App.IsGame).ToList();
+            AppsSummary = $"{games.Count} jeux ({Sizes.Format(games.Sum(a => a.App.SizeBytes ?? 0))}) · " +
+                          $"{software.Count} logiciels ({Sizes.Format(software.Sum(a => a.App.SizeBytes ?? 0))})";
 
             foreach (var l in Leftovers) l.PropertyChanged -= OnLeftoverChanged;
             Leftovers.Clear();
@@ -142,7 +152,7 @@ public sealed partial class AppsViewModel : ObservableObject
             UpdateBrokenTotal();
 
             HasScanned = true;
-            Status = $"{Apps.Count} applications, {Leftovers.Count} dossiers restants, {Broken.Count} entrées cassées.";
+            Status = $"{games.Count} jeux et {software.Count} logiciels, {Leftovers.Count} dossiers restants, {Broken.Count} entrées cassées.";
         }
         catch (Exception ex)
         {
@@ -158,6 +168,11 @@ public sealed partial class AppsViewModel : ObservableObject
     private async Task UninstallAsync(AppItem item)
     {
         var app = item.App;
+        if (!item.CanUninstall)
+        {
+            Status = $"{app.Name} se désinstalle depuis {app.Source ?? "son launcher"}.";
+            return;
+        }
         if (!_confirm($"Désinstaller {app.Name} ?\n\nLe programme de désinstallation de l'application va s'ouvrir : suis ses étapes. " +
                       "Ensuite, Optimizing Software cherchera les dossiers qu'il a laissés."))
             return;
@@ -316,11 +331,16 @@ public sealed class AppItem(InstalledApp app)
     public string Size => App.SizeBytes is { } s ? Sizes.Format(s) : "";
     public long SortSize => App.SizeBytes ?? -1;
     public bool CanUninstall => !string.IsNullOrWhiteSpace(App.UninstallCommand);
+    public string Kind => App.IsGame ? "Jeu" : "Logiciel";
+    public string Source => App.Source ?? "";
+    public string Drive => App.Drive?.TrimEnd('\\') ?? "";
+    public string UninstallLabel => CanUninstall ? "Désinstaller" : $"Via {App.Source ?? "launcher"}";
 
     public bool MatchesSearch(string search) =>
         string.IsNullOrWhiteSpace(search)
         || Name.Contains(search, StringComparison.OrdinalIgnoreCase)
-        || Publisher.Contains(search, StringComparison.OrdinalIgnoreCase);
+        || Publisher.Contains(search, StringComparison.OrdinalIgnoreCase)
+        || Source.Contains(search, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed partial class LeftoverItem(LeftoverFolder leftover) : ObservableObject

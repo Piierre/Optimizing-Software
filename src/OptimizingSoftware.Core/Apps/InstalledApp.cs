@@ -12,8 +12,16 @@ public sealed record InstalledApp(
     string? InstallLocation,
     string? UninstallCommand,
     string RegistryKey,
-    bool IsBroken)
+    bool IsBroken,
+    string? Source = null,
+    bool IsGame = false)
 {
+    /// <summary>Disque où l'application est installée (« D:\ »), si on le connaît.</summary>
+    public string? Drive => string.IsNullOrWhiteSpace(InstallLocation) ? null : Path.GetPathRoot(InstallLocation);
+
+    /// <summary>Vrai si l'entrée vient du registre (et non d'un launcher de jeux).</summary>
+    public bool FromRegistry => RegistryKey.StartsWith("HKEY_", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Mots qui servent à reconnaître les dossiers de cette application.</summary>
     public IEnumerable<string> Keys
     {

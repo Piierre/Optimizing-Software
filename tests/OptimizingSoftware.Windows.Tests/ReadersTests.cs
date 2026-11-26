@@ -133,6 +133,15 @@ public class ReadersTests
     }
 
     [WindowsFact]
+    public void Jeux_et_logiciels_sont_fusionnes_sans_planter()
+    {
+        Assert.NotNull(GameLibrariesReader.Read());
+        var all = GameLibrariesReader.ReadAllApps();
+        Assert.NotEmpty(all);
+        Assert.Equal(all.Count, all.Select(a => a.RegistryKey).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [WindowsFact]
     public void Dossiers_a_restes_existent()
     {
         var (all, programs) = AppUninstaller.LeftoverParents();
