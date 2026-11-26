@@ -49,6 +49,16 @@ public static partial class UpgradeAdvisor
                     ? "Installe Windows et tes jeux sur un SSD : c'est le changement le plus visible pour la fluidité."
                     : "Si le jeu est installé sur un disque dur (HDD), déplace-le sur ton SSD.");
                 break;
+
+            case Limiter.None:
+                advice.Add("Vérifie si le jeu plafonne les FPS (V-Sync, limite d'images dans les options ou dans le panneau NVIDIA) : dans ce cas, rien ne sature et c'est normal.");
+                advice.Add("Si ça saccade quand même, fais un tour dans l'onglet Vérifications (pilote, fréquence des écrans, plantages de la carte graphique) et ferme les applis en arrière-plan.");
+                advice.Add("Refais un enregistrement à un passage qui rame vraiment (combat, grande ville) : le résultat sera plus parlant.");
+                break;
+
+            case Limiter.NotEnoughData:
+                advice.Add("Clique sur Démarrer, lance le jeu et joue au moins 2 minutes avant de cliquer sur Arrêter et analyser.");
+                break;
         }
         return advice;
     }

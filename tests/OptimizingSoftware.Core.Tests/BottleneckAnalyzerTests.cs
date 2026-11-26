@@ -127,4 +127,41 @@ public class BottleneckAnalyzerTests
         var r = BottleneckAnalyzer.Analyze(Samples(120, cpu: 60, core: 80, gpu: 70, ram: 94), Snapshots.PierreBefore());
         Assert.Contains(r.Upgrades, u => u.Contains("32 Go de RAM DDR4"));
     }
+
+    [Fact]
+    public void Pierres_recording_cpu_peaks_with_idle_gpu_points_to_the_cpu()
+    {
+        // Mesures réelles du 25/11 : processeur 72 % en moyenne avec des pointes à 100 %, carte graphique à 35 %.
+        var samples = new List<PerformanceSample>();
+        for (var i = 0; i < 200; i++)
+        {
+            var peak = i % 10 == 0;
+            samples.Add(new PerformanceSample(TimeSpan.FromSeconds(i),
+                CpuPercent: peak ? 95 : 70, CpuBusiestCorePercent: peak ? 100 : 76, GpuPercent: 35,
+                RamPercent: 81, DiskPercent: 2, GpuTemperatureC: 41));
+        }
+
+        var r = BottleneckAnalyzer.Analyze(samples, Snapshots.PierreBefore());
+
+        Assert.Equal(Limiter.Cpu, r.Limiter);
+        Assert.Contains(r.Upgrades, u => u.Contains("i7-9700K"));
+        Assert.Contains(r.Warnings, w => w.Contains("RAM"));
+        Assert.Contains(r.Upgrades, u => u.Contains("32 Go"));
+    }
+
+    [Fact]
+    public void Fps_cap_with_low_cpu_and_gpu_is_not_blamed_on_the_cpu()
+    {
+        var samples = Samples(100, cpu: 52, core: 70, gpu: 40);
+        samples.AddRange(Samples(10, cpu: 92, core: 100, gpu: 40));
+        Assert.Equal(Limiter.None, BottleneckAnalyzer.Analyze(samples).Limiter);
+    }
+
+    [Fact]
+    public void What_to_do_is_never_empty()
+    {
+        Assert.NotEmpty(BottleneckAnalyzer.Analyze(Samples(120, cpu: 60, core: 80, gpu: 70)).Upgrades);
+        Assert.NotEmpty(BottleneckAnalyzer.Analyze(Samples(10, cpu: 60, core: 80, gpu: 70)).Upgrades);
+        Assert.NotEmpty(BottleneckAnalyzer.Analyze(Samples(120, cpu: 60, core: 80, gpu: 70, disk: 100)).Upgrades);
+    }
 }
