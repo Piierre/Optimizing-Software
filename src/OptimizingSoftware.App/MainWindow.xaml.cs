@@ -40,9 +40,11 @@ public partial class MainWindow : Window
             reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
             search: name => Process.Start(new ProcessStartInfo(
                 "https://www.google.com/search?q=" + Uri.EscapeDataString(name + ".exe processus")) { UseShellExecute = true }));
+        var home = new HomeViewModel(cleanup, apps, startup, quarantine, Confirm, () => KnownFolders.Downloads, Navigate);
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
+        HomeTab.DataContext = home;
         CleanupTab.DataContext = cleanup;
         FilesTab.DataContext = files;
         AppsTab.DataContext = apps;
@@ -56,13 +58,29 @@ public partial class MainWindow : Window
         {
             InitialScans = Task.WhenAll(
                 diagnostic.RunDiagnosticCommand.ExecuteAsync(null),
-                cleanup.InitializeAsync(),
-                apps.ScanCommand.ExecuteAsync(null),
-                startup.RefreshCommand.ExecuteAsync(null),
+                home.InitializeAsync(),
                 CheckForUpdateAsync());
             _statuses = () => [cleanup.Status, apps.Status, startup.Status];
         };
     }
+
+    /// <summary>Ouvre l'écran de détail demandé depuis l'accueil.</summary>
+    private void Navigate(string target)
+    {
+        // Les vieux téléchargements : on ouvre directement cette analyse dans l'onglet Fichiers.
+        if (target == "files" && FilesTab.DataContext is FilesViewModel files && files.IsIdle)
+            files.ScanDownloadsCommand.Execute(null);
+        Tabs.SelectedItem = TabFor(target);
+    }
+
+    private System.Windows.Controls.TabItem TabFor(string target) => target switch
+    {
+        "cleanup" => CleanupTab,
+        "files" => FilesTab,
+        "apps" => AppsTab,
+        "startup" => StartupTab,
+        _ => HomeTab,
+    };
 
     private Func<IEnumerable<string?>> _statuses = () => [];
 

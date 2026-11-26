@@ -126,13 +126,19 @@ public sealed partial class CleanupViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task CleanAsync()
+    private Task CleanAsync() => CleanSelectedAsync(ask: true);
+
+    /// <summary>Octets que le nettoyage des catégories cochées libérerait.</summary>
+    public long SelectedBytes => Categories.Where(c => c.IsSelected).Sum(c => c.Scan.TotalBytes);
+
+    /// <summary>Nettoie les catégories cochées ; <paramref name="ask"/> = faux quand l'accueil a déjà demandé confirmation.</summary>
+    public async Task<long> CleanSelectedAsync(bool ask)
     {
         var selected = Categories.Where(c => c.IsSelected && c.Scan.Files.Count > 0).ToList();
         if (selected.Count == 0)
         {
-            Status = "Coche au moins une catégorie qui contient des fichiers.";
-            return;
+            if (ask) Status = "Coche au moins une catégorie qui contient des fichiers.";
+            return 0;
         }
 
         var files = selected.SelectMany(c => c.Scan.Files).ToList();
@@ -142,7 +148,7 @@ public sealed partial class CleanupViewModel : ObservableObject
             $"Déplacer {files.Count.ToString("N0", Fr)} fichiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n" +
             $"{names}\n\n" +
             $"Tu pourras tout restaurer pendant 7 jours. Ensuite, ils seront supprimés définitivement.";
-        if (!_confirm(question)) return;
+        if (ask && !_confirm(question)) return 0;
 
         Status = "Nettoyage en cours…";
         var label = selected.Count <= 3 ? names : $"{string.Join(", ", selected.Take(3).Select(c => c.Name))} et {selected.Count - 3} autre(s)";
@@ -154,6 +160,7 @@ public sealed partial class CleanupViewModel : ObservableObject
         await ScanAsync();
         Status = $"{outcome.MovedFiles.ToString("N0", Fr)} fichiers ({Sizes.Format(outcome.MovedBytes)}) déplacés dans la corbeille."
                  + (outcome.SkippedFiles > 0 ? $" {outcome.SkippedFiles.ToString("N0", Fr)} fichiers en cours d'utilisation ont été laissés en place." : "");
+        return outcome.MovedBytes;
     }
 
     [RelayCommand]
@@ -234,8 +241,7 @@ public sealed partial class CleanupViewModel : ObservableObject
 
     private void UpdateTotal()
     {
-        var bytes = Categories.Where(c => c.IsSelected).Sum(c => c.Scan.TotalBytes);
-        SelectedTotal = $"Sélection : {Sizes.Format(bytes)}";
+        SelectedTotal = $"Sélection : {Sizes.Format(SelectedBytes)}";
     }
 }
 
