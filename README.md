@@ -11,10 +11,10 @@ Objectif (recentré le 25 novembre 2026) : garder le PC propre dans la durée en
 | 1 | Cadrage | Fait |
 | 2 | Diagnostic performances et enregistrement en jeu | Fait |
 | 3 | Corbeille interne + fichiers temporaires et caches | Fait |
-| 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | En cours |
-| 5 | Applications installées et restes de désinstallation | À venir |
-| 6 | Programmes au démarrage et processus | À venir |
-| 7 | Finitions et installeur | À venir |
+| 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | Fait |
+| 5 | Jeux et logiciels installés et restes de désinstallation | Fait (à vérifier) |
+| 6 | Programmes au démarrage et processus | Fait (à vérifier) |
+| 7 | Finitions : installeur, icône, mises à jour, test de démarrage | Fait (à vérifier) |
 
 ## Nettoyage
 
@@ -59,9 +59,44 @@ L'onglet « Fichiers » propose trois analyses, lancées à la demande :
 | Gros fichiers | Dossiers personnels et autres disques, fichiers de plus de 500 Mo | Rien |
 | Doublons | Mêmes dossiers, fichiers de plus de 1 Mo au contenu identique (SHA-256) | Les copies ; l'original est gardé |
 
+Des cases en haut de l'onglet permettent de choisir les disques à analyser (tous cochés par défaut). Sur le disque de Windows, seuls les dossiers personnels sont parcourus ; les autres disques le sont en entier.
+
 Les jeux installés (Steam, Epic, Xbox, Riot…), `Program Files`, `AppData` et `Windows` ne sont jamais parcourus. L'appli refuse de retirer tous les exemplaires d'un même doublon. Les fichiers d'un autre disque vont dans un dossier `OptimizingSoftware.Corbeille` à la racine de ce disque, pour ne pas remplir le disque de Windows.
 
 Avec les droits administrateur (bouton « Relancer en administrateur »), l'onglet Nettoyage ajoute `C:\Windows\Temp`, les téléchargements de Windows Update et les anciens journaux d'installation. La corbeille de Windows peut aussi être vidée, après une confirmation qui précise que c'est définitif.
+
+## Applications
+
+L'onglet « Jeux et logiciels » (juste après Nettoyage, analysé à l'ouverture) a trois parties :
+
+| Partie | Ce qu'on y fait | Coché par défaut |
+| --- | --- | --- |
+| Jeux et logiciels | Liste de « Applications installées » de Windows plus les jeux Steam, Epic Games et Xbox (lus dans les fichiers des launchers), avec type (jeu ou logiciel), taille, disque et launcher ; filtre Jeux / Logiciels et recherche. Les jeux EA, Ubisoft, Battle.net, GOG et Riot sont reconnus à leur éditeur ou à leur dossier. « Désinstaller » lance le désinstallateur de l'application, puis cherche ce qu'elle a laissé | — |
+| Dossiers restants | Sous-dossiers directs de Program Files, AppData (Local, LocalLow, Roaming) et ProgramData qui ne correspondent à aucune application installée et n'ont pas bougé depuis 2 mois | Dossiers vides, dossiers de programmes sans plus aucun .exe, dossiers de l'application qu'on vient de désinstaller |
+| Entrées cassées | Applications encore listées alors que leur désinstallateur et leur dossier ont disparu | Toutes |
+
+Les dossiers partagés ou sensibles ne sont jamais proposés (Microsoft, Windows, Common Files, pilotes, launchers de jeux et sauvegardes de jeux…). Les dossiers vont dans la corbeille interne comme les autres fichiers. Chaque entrée du registre est d'abord exportée dans un fichier `.reg` dans la corbeille ; si l'export échoue, l'entrée n'est pas supprimée. « Restaurer » réimporte ces fichiers. Les dossiers de Program Files et ProgramData et les entrées installées pour tout le PC demandent les droits administrateur.
+
+Les applications du Microsoft Store ne sont pas encore listées.
+
+## Démarrage et processus
+
+L'onglet « Démarrage et processus » (analysé à l'ouverture) a deux parties :
+
+- **Au démarrage** : programmes des clés Run (ton compte et tout le PC) et des dossiers Démarrage, avec un conseil : à garder (sécurité, pilotes, synchronisation, périphériques), à désactiver (launchers de jeux, messageries, navigateurs, outils de mise à jour…), à voir, ou cassé (le programme n'existe plus). La désactivation utilise les mêmes réglages que le Gestionnaire des tâches : rien n'est supprimé et on peut réactiver d'un clic, ici ou dans le Gestionnaire des tâches. Les entrées pour tout le PC demandent les droits administrateur.
+- **Processus** : programmes en cours, regroupés (Chrome, Discord…), avec mémoire, processeur mesuré sur une seconde, éditeur et signature numérique. Ils sont classés en suspect (nom d'un programme de Windows hors du dossier de Windows, programme sans signature ni éditeur dans un dossier personnel ou temporaire, mineur de cryptomonnaie connu), inutile en arrière-plan (launchers, outils de mise à jour), ou gourmand (plus de 1 Go ou 25 % du processeur). « Fermer » est refusé pour les programmes de Windows indispensables.
+
+## Installation et mises à jour
+
+- La CI produit un installeur (`OptimizingSoftware-Setup-x.y.z.exe`, artefact « OptimizingSoftware-Setup »). Il installe l'appli pour ton compte, sans droits administrateur, dans `%LOCALAPPDATA%\Programs\Optimizing Software`, avec un raccourci dans le menu Démarrer et, si tu le veux, sur le Bureau. On la désinstalle depuis Paramètres > Applications. La désinstallation garde la corbeille interne, au cas où il resterait des fichiers à restaurer.
+- La version est dans `Directory.Build.props` et s'affiche dans le titre de la fenêtre.
+- Pour publier une version : onglet Actions de GitHub > « Publier une version » > Run workflow. Ça crée la release `vX.Y.Z` avec l'installeur.
+- Au lancement, l'appli cherche une version plus récente dans les releases et affiche un bandeau avec un bouton de téléchargement. Tant que le dépôt est privé, GitHub refuse cette recherche sans compte : il ne se passe rien, sans message d'erreur.
+- En cas d'erreur inattendue, l'appli ne se ferme pas : elle affiche un message et note l'erreur dans `%LOCALAPPDATA%\OptimizingSoftware\erreurs.log`.
+
+## Tests
+
+`tests/OptimizingSoftware.Core.Tests` teste les règles (analyse, corbeille, doublons, restes…) sur des dossiers temporaires. `tests/OptimizingSoftware.Windows.Tests` lance les vraies lectures Windows (WMI, registre, dossiers, corbeille de Windows, export et réimport d'une clé de test) sur la machine Windows de GitHub à chaque modification ; ces tests sont ignorés hors Windows. Enfin, la CI lance l'appli publiée avec `--smoke-test` : elle ouvre la fenêtre, fait toutes les analyses d'ouverture, et échoue au moindre plantage ou message d'erreur.
 
 ## Enregistrement en jeu
 
@@ -70,9 +105,11 @@ Onglet « Enregistrement en jeu » : on démarre, on joue 2 à 10 minutes, on ar
 | Verdict | Règle (pendant au moins 30 % du temps en jeu) |
 | --- | --- |
 | Carte graphique | Utilisation ≥ 95 % |
-| Processeur | ≥ 90 % (ou un cœur ≥ 95 %) alors que la carte graphique est sous 85 % |
+| Processeur | ≥ 85 % (ou un cœur ≥ 90 %) alors que la carte graphique est sous 75 % ; ou, à défaut, carte graphique sous 60 % en moyenne avec un processeur chargé (60 % en moyenne) qui monte à 90 % et plus par pointes |
 | RAM | ≥ 90 % utilisée |
 | Disque | Occupé ≥ 95 % |
+
+Une RAM utilisée à plus de 80 % en moyenne est signalée en plus du verdict. La partie « Que faire » propose toujours quelque chose, même quand rien ne sature (plafond de FPS, autres vérifications).
 
 Les moments au bureau ou dans les menus (processeur et carte graphique sous 50 %) sont ignorés. L'analyse donne ensuite des conseils d'upgrade adaptés à la configuration et signale une carte graphique au-dessus de 83 °C.
 
@@ -99,6 +136,13 @@ Ou avec Visual Studio 2026 : ouvrir `OptimizingSoftware.slnx`, choisir `Optimizi
 
 Sans rien installer : chaque build GitHub Actions publie un exécutable `OptimizingSoftware-win-x64` à télécharger dans l'onglet **Actions**.
 
+## Démarrage et processus
+
+L'onglet « Démarrage et processus » (analysé à l'ouverture) a deux parties :
+
+- **Au démarrage** : programmes des clés Run (ton compte et tout le PC) et des dossiers Démarrage, avec un conseil : à garder (sécurité, pilotes, synchronisation, périphériques), à désactiver (launchers de jeux, messageries, navigateurs, outils de mise à jour…), à voir, ou cassé (le programme n'existe plus). La désactivation utilise les mêmes réglages que le Gestionnaire des tâches : rien n'est supprimé et on peut réactiver d'un clic, ici ou dans le Gestionnaire des tâches. Les entrées pour tout le PC demandent les droits administrateur.
+- **Processus** : programmes en cours, regroupés (Chrome, Discord…), avec mémoire, processeur mesuré sur une seconde, éditeur et signature numérique. Ils sont classés en suspect (nom d'un programme de Windows hors du dossier de Windows, programme sans signature ni éditeur dans un dossier personnel ou temporaire, mineur de cryptomonnaie connu), inutile en arrière-plan (launchers, outils de mise à jour), ou gourmand (plus de 1 Go ou 25 % du processeur). « Fermer » est refusé pour les programmes de Windows indispensables.
+
 ## Tests
 
 ```powershell
@@ -107,4 +151,4 @@ dotnet test
 
 ## Règles de sécurité
 
-L'application observe par défaut. Toute modification future passera par une confirmation explicite et pourra être annulée (point de restauration, corbeille interne, sauvegarde du registre). Aucune donnée ne quitte le PC.
+L'application observe par défaut. Toute modification future passera par une confirmation explicite et pourra être annulée (point de restauration, corbeille interne, sauvegarde du registre). Aucune donnée ne quitte le PC : la seule connexion est la recherche de mise à jour, qui lit la dernière version publiée sur GitHub sans rien envoyer.

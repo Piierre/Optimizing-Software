@@ -268,5 +268,10 @@ public sealed class SessionItem(QuarantineSession session)
     public string When => session.CreatedAt.ToLocalTime().ToString("d MMMM 'à' HH:mm", Fr);
     public string Expires => "Suppression définitive le " +
                              (session.CreatedAt + Quarantine.RetentionPeriod).ToLocalTime().ToString("d MMMM", Fr);
-    public string Summary => $"{FileCount.ToString("N0", Fr)} fichiers · {Size} · nettoyé le {When}";
+    public int KeyCount => session.RegistryKeys.Count;
+    public string Summary => (KeyCount == 0
+        ? $"{FileCount.ToString("N0", Fr)} fichiers · {Size}"
+        : FileCount == 0
+            ? $"{KeyCount} entrées du registre"
+            : $"{FileCount.ToString("N0", Fr)} fichiers · {Size} · {KeyCount} entrées du registre") + $" · nettoyé le {When}";
 }

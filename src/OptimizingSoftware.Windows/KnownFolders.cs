@@ -38,6 +38,29 @@ public static partial class KnownFolders
         return PersonalFolders().Concat(drives).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+    /// <summary>Disques fixes prêts (internes), celui de Windows en premier.</summary>
+    public static IReadOnlyList<Core.Files.DriveChoice> FixedDrives()
+    {
+        var system = Path.GetPathRoot(Environment.SystemDirectory);
+        var list = new List<Core.Files.DriveChoice>();
+        foreach (var d in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (d.DriveType != DriveType.Fixed || !d.IsReady) continue;
+                list.Add(new Core.Files.DriveChoice(d.RootDirectory.FullName,
+                    string.IsNullOrWhiteSpace(d.VolumeLabel) ? null : d.VolumeLabel,
+                    d.TotalSize, d.AvailableFreeSpace,
+                    string.Equals(d.Name, system, StringComparison.OrdinalIgnoreCase)));
+            }
+            catch (IOException)
+            {
+                // Disque débranché entre-temps.
+            }
+        }
+        return list.OrderByDescending(d => d.IsSystem).ThenBy(d => d.Root).ToList();
+    }
+
     private static string? TryGet(Guid id)
     {
         try
