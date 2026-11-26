@@ -108,6 +108,5 @@ public partial class MainWindow : Window
     }
 
     private bool Confirm(string question) =>
-        MessageBox.Show(this, question, "Optimizing Software", MessageBoxButton.YesNo, MessageBoxImage.Question,
-            MessageBoxResult.No) == MessageBoxResult.Yes;
+        ConfirmDialog.Ask(this, question);
 }

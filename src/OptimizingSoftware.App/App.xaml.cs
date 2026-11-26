@@ -73,8 +73,7 @@ public partial class App : Application
         }
         // Une erreur inattendue ne doit pas fermer l'appli au milieu d'un nettoyage : on prévient et on continue.
         e.Handled = true;
-        MessageBox.Show($"Une erreur inattendue s'est produite :\n\n{e.Exception.Message}\n\nElle a été notée dans {ErrorLog}.",
-            "Optimizing Software", MessageBoxButton.OK, MessageBoxImage.Warning);
+        ConfirmDialog.Inform(MainWindow, $"Une erreur inattendue s'est produite\n\n{e.Exception.Message}\n\nElle a été notée dans {ErrorLog}.");
     }
 
     /// <summary>En test de démarrage : écrit le message dans le journal (une appli fenêtrée n'a pas de console).</summary>
