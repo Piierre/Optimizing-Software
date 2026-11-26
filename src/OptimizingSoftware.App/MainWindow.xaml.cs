@@ -33,12 +33,19 @@ public partial class MainWindow : Window
             quarantine, Confirm, isAdmin, Elevation.RestartAsAdministrator,
             onCleaned: cleanup.RefreshSessions,
             reveal: path => Process.Start("explorer.exe", $"\"{path}\""));
+        var startup = new StartupViewModel(
+            StartupPrograms.Read, StartupPrograms.SetEnabled, ct => ProcessReader.ReadAsync(ct), ProcessReader.Close,
+            Confirm, isAdmin,
+            reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
+            search: name => Process.Start(new ProcessStartInfo(
+                "https://www.google.com/search?q=" + Uri.EscapeDataString(name + ".exe processus")) { UseShellExecute = true }));
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
         CleanupTab.DataContext = cleanup;
         FilesTab.DataContext = files;
         AppsTab.DataContext = apps;
+        StartupTab.DataContext = startup;
         DiagnosticTab.DataContext = diagnostic;
         RecordingTab.DataContext = recording;
         Closed += (_, _) => recording.Dispose();
@@ -49,6 +56,7 @@ public partial class MainWindow : Window
             diagnostic.RunDiagnosticCommand.Execute(null);
             await cleanup.InitializeAsync();
             apps.ScanCommand.Execute(null);
+            startup.RefreshCommand.Execute(null);
         };
     }
 

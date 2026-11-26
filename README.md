@@ -12,8 +12,8 @@ Objectif (recentré le 25 novembre 2026) : garder le PC propre dans la durée en
 | 2 | Diagnostic performances et enregistrement en jeu | Fait |
 | 3 | Corbeille interne + fichiers temporaires et caches | Fait |
 | 4 | Vieux téléchargements, gros fichiers, doublons, corbeille de Windows, dossiers système | Fait |
-| 5 | Applications installées et restes de désinstallation | En cours |
-| 6 | Programmes au démarrage et processus | À venir |
+| 5 | Jeux et logiciels installés et restes de désinstallation | Fait (à vérifier) |
+| 6 | Programmes au démarrage et processus | Fait (à vérifier) |
 | 7 | Finitions et installeur | À venir |
 
 ## Nettoyage
@@ -79,6 +79,13 @@ Les dossiers partagés ou sensibles ne sont jamais proposés (Microsoft, Windows
 
 Les applications du Microsoft Store ne sont pas encore listées.
 
+## Démarrage et processus
+
+L'onglet « Démarrage et processus » (analysé à l'ouverture) a deux parties :
+
+- **Au démarrage** : programmes des clés Run (ton compte et tout le PC) et des dossiers Démarrage, avec un conseil : à garder (sécurité, pilotes, synchronisation, périphériques), à désactiver (launchers de jeux, messageries, navigateurs, outils de mise à jour…), à voir, ou cassé (le programme n'existe plus). La désactivation utilise les mêmes réglages que le Gestionnaire des tâches : rien n'est supprimé et on peut réactiver d'un clic, ici ou dans le Gestionnaire des tâches. Les entrées pour tout le PC demandent les droits administrateur.
+- **Processus** : programmes en cours, regroupés (Chrome, Discord…), avec mémoire, processeur mesuré sur une seconde, éditeur et signature numérique. Ils sont classés en suspect (nom d'un programme de Windows hors du dossier de Windows, programme sans signature ni éditeur dans un dossier personnel ou temporaire, mineur de cryptomonnaie connu), inutile en arrière-plan (launchers, outils de mise à jour), ou gourmand (plus de 1 Go ou 25 % du processeur). « Fermer » est refusé pour les programmes de Windows indispensables.
+
 ## Tests
 
 `tests/OptimizingSoftware.Core.Tests` teste les règles (analyse, corbeille, doublons, restes…) sur des dossiers temporaires. `tests/OptimizingSoftware.Windows.Tests` lance les vraies lectures Windows (WMI, registre, dossiers, corbeille de Windows, export et réimport d'une clé de test) sur la machine Windows de GitHub à chaque modification ; ces tests sont ignorés hors Windows.
@@ -120,6 +127,13 @@ dotnet run --project src/OptimizingSoftware.App
 Ou avec Visual Studio 2026 : ouvrir `OptimizingSoftware.slnx`, choisir `OptimizingSoftware.App` comme projet de démarrage, puis F5.
 
 Sans rien installer : chaque build GitHub Actions publie un exécutable `OptimizingSoftware-win-x64` à télécharger dans l'onglet **Actions**.
+
+## Démarrage et processus
+
+L'onglet « Démarrage et processus » (analysé à l'ouverture) a deux parties :
+
+- **Au démarrage** : programmes des clés Run (ton compte et tout le PC) et des dossiers Démarrage, avec un conseil : à garder (sécurité, pilotes, synchronisation, périphériques), à désactiver (launchers de jeux, messageries, navigateurs, outils de mise à jour…), à voir, ou cassé (le programme n'existe plus). La désactivation utilise les mêmes réglages que le Gestionnaire des tâches : rien n'est supprimé et on peut réactiver d'un clic, ici ou dans le Gestionnaire des tâches. Les entrées pour tout le PC demandent les droits administrateur.
+- **Processus** : programmes en cours, regroupés (Chrome, Discord…), avec mémoire, processeur mesuré sur une seconde, éditeur et signature numérique. Ils sont classés en suspect (nom d'un programme de Windows hors du dossier de Windows, programme sans signature ni éditeur dans un dossier personnel ou temporaire, mineur de cryptomonnaie connu), inutile en arrière-plan (launchers, outils de mise à jour), ou gourmand (plus de 1 Go ou 25 % du processeur). « Fermer » est refusé pour les programmes de Windows indispensables.
 
 ## Tests
 
