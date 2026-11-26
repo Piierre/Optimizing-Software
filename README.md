@@ -67,11 +67,11 @@ Avec les droits administrateur (bouton « Relancer en administrateur »), l'ongl
 
 ## Applications
 
-L'onglet « Applications » (bouton « Analyser ») a trois parties :
+L'onglet « Jeux et logiciels » (juste après Nettoyage, analysé à l'ouverture) a trois parties :
 
 | Partie | Ce qu'on y fait | Coché par défaut |
 | --- | --- | --- |
-| Installées | Liste de « Applications installées » de Windows, triée par taille, avec recherche. « Désinstaller » lance le désinstallateur de l'application, puis cherche ce qu'elle a laissé | — |
+| Jeux et logiciels | Liste de « Applications installées » de Windows plus les jeux Steam, Epic Games et Xbox (lus dans les fichiers des launchers), avec type (jeu ou logiciel), taille, disque et launcher ; filtre Jeux / Logiciels et recherche. Les jeux EA, Ubisoft, Battle.net, GOG et Riot sont reconnus à leur éditeur ou à leur dossier. « Désinstaller » lance le désinstallateur de l'application, puis cherche ce qu'elle a laissé | — |
 | Dossiers restants | Sous-dossiers directs de Program Files, AppData (Local, LocalLow, Roaming) et ProgramData qui ne correspondent à aucune application installée et n'ont pas bougé depuis 2 mois | Dossiers vides, dossiers de programmes sans plus aucun .exe, dossiers de l'application qu'on vient de désinstaller |
 | Entrées cassées | Applications encore listées alors que leur désinstallateur et leur dossier ont disparu | Toutes |
 
