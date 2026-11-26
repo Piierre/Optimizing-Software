@@ -26,3 +26,4 @@ coverage*.xml
 # NuGet
 *.nupkg
 packages/
+installer-output/

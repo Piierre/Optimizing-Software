@@ -24,7 +24,32 @@ jobs:
       - name: Publier l'exécutable
         run: dotnet publish src/OptimizingSoftware.App -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
 
+      # Ouvre vraiment l'appli, lance toutes les analyses d'ouverture et vérifie qu'elle n'a pas d'erreur.
+      - name: Test de démarrage de l'appli
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath publish\OptimizingSoftware.exe -ArgumentList '--smoke-test' -PassThru
+          if (-not $p.WaitForExit(420000)) { $p.Kill(); Write-Error "L'appli ne s'est pas arrêtée à temps."; exit 1 }
+          $log = Join-Path $env:LOCALAPPDATA 'OptimizingSoftware\erreurs.log'
+          if (Test-Path $log) { Get-Content $log }
+          if ($p.ExitCode -ne 0) { Write-Error "Test de démarrage en échec (code $($p.ExitCode))."; exit 1 }
+          Write-Host "Démarrage OK."
+
+      - name: Créer l'installeur
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=$version" "/DPublishDir=..\publish" installer\OptimizingSoftware.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - uses: actions/upload-artifact@v4
         with:
           name: OptimizingSoftware-win-x64
           path: publish/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OptimizingSoftware-Setup
+          path: installer-output/*.exe
