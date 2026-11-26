@@ -113,3 +113,7 @@ Optimizing-Software/
 - À chaque modification, GitHub Actions compile sur Windows, lance les tests, ouvre l'appli publiée avec `--smoke-test` (toutes les analyses d'ouverture, échec au moindre plantage) et crée l'installeur.
 - La version est dans `Directory.Build.props` et s'affiche dans le titre de la fenêtre.
 - Pour publier une version : onglet **Actions** > « Publier une version » > **Run workflow**. Ça crée la release `vX.Y.Z` avec l'installeur, que l'appli propose ensuite comme mise à jour.
+
+## Licence
+
+Code distribué sous licence [MIT](LICENSE) : libre de le réutiliser, à condition de garder la mention de l'auteur.
