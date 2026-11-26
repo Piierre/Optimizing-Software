@@ -195,7 +195,7 @@ public sealed partial class FilesViewModel : ObservableObject
         var bytes = selected.Sum(f => f.Candidate.SizeBytes);
         var preview = string.Join("\n", selected.Take(8).Select(f => "•  " + f.Name))
                       + (selected.Count > 8 ? $"\n… et {selected.Count - 8} autre(s)" : "");
-        if (!_confirm($"Déplacer {selected.Count.ToString("N0", Fr)} fichiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n{preview}\n\nTu pourras les restaurer pendant 7 jours depuis l'onglet Nettoyage."))
+        if (!_confirm($"Déplacer {selected.Count.ToString("N0", Fr)} fichiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n{preview}\n\nTu pourras les restaurer pendant 7 jours depuis « Libérer de la place »."))
             return;
 
         IsBusy = true;

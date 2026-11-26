@@ -40,9 +40,11 @@ public partial class MainWindow : Window
             reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
             search: name => Process.Start(new ProcessStartInfo(
                 "https://www.google.com/search?q=" + Uri.EscapeDataString(name + ".exe processus")) { UseShellExecute = true }));
+        var home = new HomeViewModel(cleanup, apps, startup, quarantine, Confirm, () => KnownFolders.Downloads, Navigate);
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 
+        HomeTab.DataContext = home;
         CleanupTab.DataContext = cleanup;
         FilesTab.DataContext = files;
         AppsTab.DataContext = apps;
@@ -54,15 +56,42 @@ public partial class MainWindow : Window
         // Analyse et diagnostic sont en lecture seule : on peut les lancer dès l'ouverture.
         Loaded += (_, _) =>
         {
-            InitialScans = Task.WhenAll(
-                diagnostic.RunDiagnosticCommand.ExecuteAsync(null),
-                cleanup.InitializeAsync(),
-                apps.ScanCommand.ExecuteAsync(null),
-                startup.RefreshCommand.ExecuteAsync(null),
-                CheckForUpdateAsync());
+            var diag = diagnostic.RunDiagnosticCommand.ExecuteAsync(null);
+            var update = CheckForUpdateAsync();
+            InitialScans = Task.WhenAll(diag, home.InitializeAsync(), update);
+            _pending = () =>
+            {
+                var pending = new List<string>(home.PendingScans());
+                if (!diag.IsCompleted) pending.Add("diagnostic");
+                if (!update.IsCompleted) pending.Add("recherche de mise à jour");
+                return pending;
+            };
             _statuses = () => [cleanup.Status, apps.Status, startup.Status];
         };
     }
+
+    /// <summary>Ouvre l'écran de détail demandé depuis l'accueil.</summary>
+    private void Navigate(string target)
+    {
+        // Les vieux téléchargements : on ouvre directement cette analyse dans l'onglet Fichiers.
+        if (target == "files" && FilesTab.DataContext is FilesViewModel files && files.IsIdle)
+            files.ScanDownloadsCommand.Execute(null);
+        Tabs.SelectedItem = TabFor(target);
+    }
+
+    private System.Windows.Controls.TabItem TabFor(string target) => target switch
+    {
+        "cleanup" => CleanupTab,
+        "files" => FilesTab,
+        "apps" => AppsTab,
+        "startup" => StartupTab,
+        _ => HomeTab,
+    };
+
+    private Func<IReadOnlyList<string>> _pending = () => [];
+
+    /// <summary>Analyses d'ouverture encore en cours (diagnostic du test de démarrage).</summary>
+    public IReadOnlyList<string> PendingScans() => _pending();
 
     private Func<IEnumerable<string?>> _statuses = () => [];
 
@@ -90,6 +119,5 @@ public partial class MainWindow : Window
     }
 
     private bool Confirm(string question) =>
-        MessageBox.Show(this, question, "Optimizing Software", MessageBoxButton.YesNo, MessageBoxImage.Question,
-            MessageBoxResult.No) == MessageBoxResult.Yes;
+        ConfirmDialog.Ask(this, question);
 }

@@ -250,20 +250,23 @@ public sealed partial class AppsViewModel : ObservableObject
     private void Reveal(string path) => _reveal(path);
 
     [RelayCommand]
-    private async Task CleanLeftoversAsync()
+    private Task CleanLeftoversAsync() => CleanSelectedLeftoversAsync(ask: true);
+
+    /// <summary>Déplace les dossiers restants cochés ; <paramref name="ask"/> = faux quand l'accueil a déjà demandé confirmation.</summary>
+    public async Task<long> CleanSelectedLeftoversAsync(bool ask)
     {
         var selected = Leftovers.Where(l => l.IsSelected).ToList();
         if (selected.Count == 0)
         {
-            Status = "Coche au moins un dossier.";
-            return;
+            if (ask) Status = "Coche au moins un dossier.";
+            return 0;
         }
         var bytes = selected.Sum(l => l.Leftover.SizeBytes);
         var preview = string.Join("\n", selected.Take(8).Select(l => "•  " + l.Path))
                       + (selected.Count > 8 ? $"\n… et {selected.Count - 8} autre(s)" : "");
-        if (!_confirm($"Déplacer {selected.Count} dossiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n{preview}\n\n" +
-                      "Tu pourras les restaurer pendant 7 jours depuis l'onglet Nettoyage."))
-            return;
+        if (ask && !_confirm($"Déplacer {selected.Count} dossiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n{preview}\n\n" +
+                      "Tu pourras les restaurer pendant 7 jours depuis « Libérer de la place »."))
+            return 0;
 
         IsBusy = true;
         try
@@ -290,10 +293,12 @@ public sealed partial class AppsViewModel : ObservableObject
                      + (remaining == 0 ? "" : $" {remaining} dossier(s) n'ont pas pu être vidés entièrement"
                                               + (IsAdministrator ? " (fichiers en cours d'utilisation ?)." : " : relance en administrateur pour Program Files et ProgramData."));
             _onCleaned();
+            return outcome.MovedBytes;
         }
         catch (Exception ex)
         {
             Status = $"Le nettoyage a échoué : {ex.Message}";
+            return 0;
         }
         finally
         {
@@ -313,7 +318,7 @@ public sealed partial class AppsViewModel : ObservableObject
         var preview = string.Join("\n", selected.Take(8).Select(b => "•  " + b.Name))
                       + (selected.Count > 8 ? $"\n… et {selected.Count - 8} autre(s)" : "");
         if (!_confirm($"Retirer {selected.Count} entrées cassées de la liste des programmes ?\n\n{preview}\n\n" +
-                      "Chaque entrée est d'abord sauvegardée. Tu pourras la remettre pendant 7 jours depuis l'onglet Nettoyage."))
+                      "Chaque entrée est d'abord sauvegardée. Tu pourras la remettre pendant 7 jours depuis « Libérer de la place »."))
             return;
 
         IsBusy = true;

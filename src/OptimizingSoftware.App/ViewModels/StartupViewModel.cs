@@ -95,7 +95,7 @@ public sealed partial class StartupViewModel : ObservableObject
             ProcessesSummary = $"{Processes.Count} programmes en cours · {Sizes.Format(Processes.Sum(p => p.MemoryBytes))} de mémoire"
                                + (suspicious > 0 ? $" · {suspicious} suspect(s)" : " · rien de suspect");
             Status = suspicious > 0
-                ? $"{suspicious} programme(s) suspect(s) : regarde l'onglet Processus."
+                ? $"{suspicious} programme(s) suspect(s) : regarde la partie Processus."
                 : $"Rien de suspect. {Startup.Count(s => s.IsEnabled && s.Advice == StartupAdvice.Disable)} programme(s) au démarrage peuvent être désactivés.";
             if (suspicious > 0) Section = 1;
         }
@@ -122,22 +122,28 @@ public sealed partial class StartupViewModel : ObservableObject
         else
         {
             Status = $"Impossible de modifier {item.Name} : il est lancé pour tout le PC"
-                     + (IsAdministrator ? "." : ", relance l'appli en administrateur (bouton dans l'onglet Nettoyage).");
+                     + (IsAdministrator ? "." : ", relance l'appli en administrateur (bouton dans « Libérer de la place »).");
         }
     }
 
     [RelayCommand]
-    private void DisableSuggested()
+    private void DisableSuggested() => DisableSuggestedPrograms(ask: true);
+
+    /// <summary>Programmes actifs au démarrage qu'on conseille de désactiver.</summary>
+    public IReadOnlyList<StartupItem> Suggested => Startup.Where(s => s.IsEnabled && s.Advice == StartupAdvice.Disable).ToList();
+
+    /// <summary>Désactive ceux conseillés ; <paramref name="ask"/> = faux quand l'accueil a déjà demandé confirmation.</summary>
+    public int DisableSuggestedPrograms(bool ask)
     {
-        var targets = Startup.Where(s => s.IsEnabled && s.Advice == StartupAdvice.Disable).ToList();
+        var targets = Suggested;
         if (targets.Count == 0)
         {
-            Status = "Aucun programme conseillé à désactiver.";
-            return;
+            if (ask) Status = "Aucun programme conseillé à désactiver.";
+            return 0;
         }
-        if (!_confirm($"Désactiver au démarrage :\n\n{string.Join("\n", targets.Select(t => "•  " + t.Name))}\n\n" +
+        if (ask && !_confirm($"Désactiver au démarrage :\n\n{string.Join("\n", targets.Select(t => "•  " + t.Name))}\n\n" +
                       "Ils restent installés et tu pourras les réactiver ici (ou dans le Gestionnaire des tâches)."))
-            return;
+            return 0;
         var done = 0;
         foreach (var t in targets)
         {
@@ -148,6 +154,7 @@ public sealed partial class StartupViewModel : ObservableObject
         UpdateStartupSummary();
         Status = $"{done} programme(s) désactivé(s) au démarrage."
                  + (done < targets.Count ? $" {targets.Count - done} lancé(s) pour tout le PC demandent les droits administrateur." : "");
+        return done;
     }
 
     [RelayCommand]

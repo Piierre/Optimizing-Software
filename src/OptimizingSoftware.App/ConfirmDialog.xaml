@@ -1,0 +1,31 @@
+<Window x:Class="OptimizingSoftware.App.ConfirmDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Optimizing Software" Width="460" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner" Foreground="#1B1B1B">
+    <!-- Boîte de confirmation aux couleurs de l'appli, à la place de la MessageBox de Windows. -->
+    <Border Margin="16" CornerRadius="10" BorderThickness="1"
+            BorderBrush="#E1E1E1"
+            Background="#FFFFFF">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.25" />
+        </Border.Effect>
+        <StackPanel>
+            <StackPanel Margin="24,22,24,20">
+                <TextBlock x:Name="Heading" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <ScrollViewer MaxHeight="340" VerticalScrollBarVisibility="Auto" Margin="0,10,0,0" x:Name="BodyScroll">
+                    <TextBlock x:Name="Body" TextWrapping="Wrap" LineHeight="20" Opacity="0.85" />
+                </ScrollViewer>
+            </StackPanel>
+            <Border CornerRadius="0,0,10,10" Padding="24,14" Background="#F6F6F6"
+                    BorderThickness="0,1,0,0" BorderBrush="#E1E1E1">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CancelButton" Content="Annuler" IsCancel="True" MinWidth="110" Padding="16,7" Margin="0,0,8,0" Click="OnCancel" />
+                    <Button x:Name="OkButton" Content="Continuer" MinWidth="110" Padding="16,7" Click="OnOk"
+                            Style="{DynamicResource AccentButtonStyle}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>
