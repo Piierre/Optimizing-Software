@@ -95,7 +95,7 @@ public sealed partial class StartupViewModel : ObservableObject
             ProcessesSummary = $"{Processes.Count} programmes en cours · {Sizes.Format(Processes.Sum(p => p.MemoryBytes))} de mémoire"
                                + (suspicious > 0 ? $" · {suspicious} suspect(s)" : " · rien de suspect");
             Status = suspicious > 0
-                ? $"{suspicious} programme(s) suspect(s) : regarde l'onglet Processus."
+                ? $"{suspicious} programme(s) suspect(s) : regarde la partie Processus."
                 : $"Rien de suspect. {Startup.Count(s => s.IsEnabled && s.Advice == StartupAdvice.Disable)} programme(s) au démarrage peuvent être désactivés.";
             if (suspicious > 0) Section = 1;
         }
@@ -122,7 +122,7 @@ public sealed partial class StartupViewModel : ObservableObject
         else
         {
             Status = $"Impossible de modifier {item.Name} : il est lancé pour tout le PC"
-                     + (IsAdministrator ? "." : ", relance l'appli en administrateur (bouton dans l'onglet Nettoyage).");
+                     + (IsAdministrator ? "." : ", relance l'appli en administrateur (bouton dans « Libérer de la place »).");
         }
     }
 

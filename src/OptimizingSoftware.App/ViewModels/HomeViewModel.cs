@@ -170,7 +170,7 @@ public sealed partial class HomeViewModel : ObservableObject
         if (disabled > 0) parts.Add($"{disabled} programme(s) retiré(s) du démarrage");
         Result = parts.Count == 0
             ? "Rien n'a pu être nettoyé (fichiers en cours d'utilisation ?)."
-            : "C'est fait : " + string.Join(", ", parts) + ". Tu peux tout remettre pendant 7 jours depuis la Corbeille.";
+            : "C'est fait : " + string.Join(", ", parts) + ". Tu peux tout remettre pendant 7 jours depuis la corbeille (bouton ci-dessous).";
     }
 
     private void OnDetailChanged(object? sender, PropertyChangedEventArgs e)

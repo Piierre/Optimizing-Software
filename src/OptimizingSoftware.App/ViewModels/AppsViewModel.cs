@@ -265,7 +265,7 @@ public sealed partial class AppsViewModel : ObservableObject
         var preview = string.Join("\n", selected.Take(8).Select(l => "•  " + l.Path))
                       + (selected.Count > 8 ? $"\n… et {selected.Count - 8} autre(s)" : "");
         if (ask && !_confirm($"Déplacer {selected.Count} dossiers ({Sizes.Format(bytes)}) vers la corbeille d'Optimizing Software ?\n\n{preview}\n\n" +
-                      "Tu pourras les restaurer pendant 7 jours depuis la Corbeille."))
+                      "Tu pourras les restaurer pendant 7 jours depuis « Libérer de la place »."))
             return 0;
 
         IsBusy = true;
@@ -318,7 +318,7 @@ public sealed partial class AppsViewModel : ObservableObject
         var preview = string.Join("\n", selected.Take(8).Select(b => "•  " + b.Name))
                       + (selected.Count > 8 ? $"\n… et {selected.Count - 8} autre(s)" : "");
         if (!_confirm($"Retirer {selected.Count} entrées cassées de la liste des programmes ?\n\n{preview}\n\n" +
-                      "Chaque entrée est d'abord sauvegardée. Tu pourras la remettre pendant 7 jours depuis l'onglet Nettoyage."))
+                      "Chaque entrée est d'abord sauvegardée. Tu pourras la remettre pendant 7 jours depuis « Libérer de la place »."))
             return;
 
         IsBusy = true;
