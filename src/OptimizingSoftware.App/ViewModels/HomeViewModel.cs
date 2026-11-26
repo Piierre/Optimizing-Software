@@ -193,7 +193,7 @@ public sealed partial class HomeViewModel : ObservableObject
             dl.Count == 0 ? "Aucun vieil installateur" : $"{dl.Count.ToString("N0", Fr)} installateurs de plus de 3 mois, ils se retéléchargent");
 
         var left = _apps.Leftovers.Where(l => l.IsSelected).ToList();
-        Leftovers.Set(left.Sum(l => l.Leftover.SizeBytes),
+        Leftovers.Set(left.Sum(l => l.Leftover.SizeBytes), left.Count, "dossier(s)",
             left.Count == 0 ? "Aucun dossier oublié" : $"{left.Count} dossier(s) laissé(s) par des applications qui ne sont plus là");
 
         var suggested = _startup.Suggested;
@@ -257,11 +257,14 @@ public sealed partial class HomeLine(string title, string target) : ObservableOb
 
     public bool HasItems => Bytes > 0 || Count > 0;
 
-    public void Set(long bytes, string detail)
+    public void Set(long bytes, string detail) => Set(bytes, 0, "", detail);
+
+    /// <summary>Taille à libérer ; <paramref name="items"/> compte aussi les éléments vides (dossier de 0 octet).</summary>
+    public void Set(long bytes, int items, string unit, string detail)
     {
-        Count = 0;
         Bytes = bytes;
-        Value = bytes > 0 ? Sizes.Format(bytes) : "—";
+        Count = bytes > 0 ? 0 : items;
+        Value = bytes > 0 ? Sizes.Format(bytes) : items > 0 ? $"{items} {unit}" : "—";
         Detail = detail;
     }
 

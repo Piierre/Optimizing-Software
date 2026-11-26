@@ -4,7 +4,8 @@
         xmlns:vm="clr-namespace:OptimizingSoftware.App.ViewModels"
         xmlns:local="clr-namespace:OptimizingSoftware.App"
         Title="Optimizing Software" Height="760" Width="1040" MinWidth="720" MinHeight="480"
-        WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico">
+        WindowStartupLocation="CenterScreen" Icon="Assets/icon.ico"
+        Foreground="{DynamicResource TextFillColorPrimaryBrush}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <local:BrushKeyConverter x:Key="BrushKey" />
@@ -36,7 +37,7 @@
                         <StackPanel>
                             <TextBlock x:Name="Group" Text="{TemplateBinding Tag}" FontSize="12" Opacity="0.6" Margin="12,20,0,6" />
                             <Border x:Name="Bg" CornerRadius="6" Padding="12,9" Margin="0,1" Background="Transparent">
-                                <ContentPresenter ContentSource="Header" TextElement.FontSize="14" />
+                                <ContentPresenter ContentSource="Header" TextElement.FontSize="14" TextElement.Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                             </Border>
                         </StackPanel>
                         <ControlTemplate.Triggers>
