@@ -170,11 +170,23 @@ public sealed partial class AppsViewModel : ObservableObject
         var app = item.App;
         if (!item.CanUninstall)
         {
-            Status = $"{app.Name} se désinstalle depuis {app.Source ?? "son launcher"}.";
+            // Le launcher ne propose pas de désinstallation directe : on explique où le faire, et on propose de l'ouvrir.
+            var launcher = app.Source ?? "son launcher";
+            Status = $"{app.Name} se désinstalle depuis {launcher}.";
+            var uri = LauncherUri(app.Source);
+            var message = $"{app.Name} vient de {launcher}. Pour le désinstaller proprement, passe par {launcher} : " +
+                          "ouvre ta bibliothèque, clique sur le jeu, puis « Désinstaller ».";
+            if (uri is null) Status = message;
+            else if (_confirm(message + $"\n\nOuvrir {launcher} maintenant ?")) OpenUri(uri);
             return;
         }
-        if (!_confirm($"Désinstaller {app.Name} ?\n\nLe programme de désinstallation de l'application va s'ouvrir : suis ses étapes. " +
-                      "Ensuite, Optimizing Software cherchera les dossiers qu'il a laissés."))
+        var how = item.HasLauncher
+            ? $"La désinstallation officielle de {app.Source} va s'ouvrir, comme si tu passais par son launcher : suis ses étapes. " +
+              "Optimizing Software ne supprime aucun fichier du jeu lui-même."
+            : "Le programme de désinstallation officiel de l'application va s'ouvrir : suis ses étapes. " +
+              "Optimizing Software ne supprime aucun fichier lui-même.";
+        if (!_confirm($"Désinstaller {app.Name} ?\n\n{how}\n\n" +
+                      "Ensuite, il cherchera les dossiers laissés et te les proposera dans « Dossiers restants »."))
             return;
 
         IsBusy = true;
@@ -207,6 +219,31 @@ public sealed partial class AppsViewModel : ObservableObject
             ? $"{app.Name} est désinstallé, et il n'a laissé aucun dossier."
             : $"{app.Name} est désinstallé. Il a laissé {fromIt} dossier(s), cochés dans « Dossiers restants ».";
         if (fromIt > 0) Section = 1;
+    }
+
+    /// <summary>Lien qui ouvre la bibliothèque du launcher, quand on en connaît un.</summary>
+    private static string? LauncherUri(string? source) => source switch
+    {
+        "Epic Games" => "com.epicgames.launcher://store/library",
+        "Steam" => "steam://nav/games",
+        "Xbox" => "ms-settings:appsfeatures",
+        "Battle.net" => "battlenet://",
+        "EA" => "origin2://library/open",
+        "Ubisoft" => "uplay://",
+        "GOG" => "goggalaxy://openGameView",
+        _ => null,
+    };
+
+    private void OpenUri(string uri)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri) { UseShellExecute = true });
+        }
+        catch (Exception)
+        {
+            Status = "Le launcher n'a pas pu être ouvert : lance-le toi-même pour désinstaller le jeu.";
+        }
     }
 
     [RelayCommand]
@@ -334,7 +371,10 @@ public sealed class AppItem(InstalledApp app)
     public string Kind => App.IsGame ? "Jeu" : "Logiciel";
     public string Source => App.Source ?? "";
     public string Drive => App.Drive?.TrimEnd('\\') ?? "";
-    public string UninstallLabel => CanUninstall ? "Désinstaller" : $"Via {App.Source ?? "launcher"}";
+    /// <summary>Vrai pour un jeu géré par un launcher (Steam, Riot Games…) : sa désinstallation passe par lui.</summary>
+    public bool HasLauncher => App.IsGame && !string.IsNullOrEmpty(App.Source);
+    public string UninstallLabel => !CanUninstall ? $"Via {App.Source ?? "launcher"}"
+        : HasLauncher ? $"Désinstaller ({App.Source})" : "Désinstaller";
 
     public bool MatchesSearch(string search) =>
         string.IsNullOrWhiteSpace(search)

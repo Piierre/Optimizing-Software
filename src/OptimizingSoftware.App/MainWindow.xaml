@@ -199,7 +199,7 @@
                                     <DataGridTextColumn Header="Éditeur" Binding="{Binding Publisher}" Width="2*" />
                                     <DataGridTextColumn Header="Installée le" Binding="{Binding Installed}" SortMemberPath="App.InstallDate" Width="100" />
                                     <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="*" />
-                                    <DataGridTemplateColumn Header="" Width="120">
+                                    <DataGridTemplateColumn Header="" Width="Auto" MinWidth="120">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Button Content="{Binding UninstallLabel}" Padding="8,2"
