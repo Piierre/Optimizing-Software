@@ -26,7 +26,8 @@ public partial class MainWindow : Window
             KnownFolders.PersonalFolders,
             KnownFolders.PersonalFoldersAndDataDrives,
             onCleaned: cleanup.RefreshSessions,
-            reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""));
+            reveal: path => Process.Start("explorer.exe", $"/select,\"{path}\""),
+            drives: KnownFolders.FixedDrives);
         var diagnostic = new MainViewModel(new WindowsSnapshotProvider(), new DiagnosticEngine());
         var recording = new RecordingViewModel(() => diagnostic.LastSnapshot);
 

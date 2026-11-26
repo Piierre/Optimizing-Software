@@ -59,6 +59,8 @@ L'onglet « Fichiers » propose trois analyses, lancées à la demande :
 | Gros fichiers | Dossiers personnels et autres disques, fichiers de plus de 500 Mo | Rien |
 | Doublons | Mêmes dossiers, fichiers de plus de 1 Mo au contenu identique (SHA-256) | Les copies ; l'original est gardé |
 
+Des cases en haut de l'onglet permettent de choisir les disques à analyser (tous cochés par défaut). Sur le disque de Windows, seuls les dossiers personnels sont parcourus ; les autres disques le sont en entier.
+
 Les jeux installés (Steam, Epic, Xbox, Riot…), `Program Files`, `AppData` et `Windows` ne sont jamais parcourus. L'appli refuse de retirer tous les exemplaires d'un même doublon. Les fichiers d'un autre disque vont dans un dossier `OptimizingSoftware.Corbeille` à la racine de ce disque, pour ne pas remplir le disque de Windows.
 
 Avec les droits administrateur (bouton « Relancer en administrateur »), l'onglet Nettoyage ajoute `C:\Windows\Temp`, les téléchargements de Windows Update et les anciens journaux d'installation. La corbeille de Windows peut aussi être vidée, après une confirmation qui précise que c'est définitif.
